@@ -2,15 +2,16 @@ package io.github.foundationgames.deathrun.game.state;
 
 import io.github.foundationgames.deathrun.game.DeathRunConfig;
 import io.github.foundationgames.deathrun.game.map.DeathRunMap;
-import io.github.foundationgames.deathrun.game.state.logic.DRPlayerLogic;
 import io.github.foundationgames.deathrun.game.state.logic.DRItemLogic;
+import io.github.foundationgames.deathrun.game.state.logic.DRPlayerLogic;
+import io.github.foundationgames.deathrun.util.DRUtil;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.TypedActionResult;
+import net.minecraft.world.GameRules;
 import xyz.nucleoid.fantasy.RuntimeWorldConfig;
 import xyz.nucleoid.plasmid.game.GameActivity;
 import xyz.nucleoid.plasmid.game.GameOpenContext;
@@ -19,16 +20,15 @@ import xyz.nucleoid.plasmid.game.GameResult;
 import xyz.nucleoid.plasmid.game.common.GameWaitingLobby;
 import xyz.nucleoid.plasmid.game.event.GameActivityEvents;
 import xyz.nucleoid.plasmid.game.event.GamePlayerEvents;
-import xyz.nucleoid.plasmid.game.rule.GameRuleType;
 import xyz.nucleoid.stimuli.event.item.ItemUseEvent;
 import xyz.nucleoid.stimuli.event.player.PlayerDeathEvent;
 
 public class DRWaiting {
-    private final ServerWorld world;
-    private final GameActivity game;
-    private final DeathRunMap map;
-    private final DeathRunConfig config;
-    private final DRPlayerLogic players;
+    public final ServerWorld world;
+    public final GameActivity game;
+    public final DeathRunMap map;
+    public final DeathRunConfig config;
+    public final DRPlayerLogic players;
     private final DRItemLogic items = new DRItemLogic();
 
     public DRWaiting(ServerWorld world, GameActivity game, DeathRunMap map, DeathRunConfig config) {
@@ -48,22 +48,14 @@ public class DRWaiting {
         var map = DeathRunMap.create(server, mapCfg);
         var worldCfg = new RuntimeWorldConfig().setTimeOfDay(mapCfg.time()).setGenerator(map.createGenerator(server));
 
+        worldCfg.setGameRule(GameRules.DO_FIRE_TICK, false);
+
         return ctx.openWithWorld(worldCfg, (game, world) -> {
             var waiting = new DRWaiting(world, game, map, cfg);
 
             GameWaitingLobby.addTo(game, cfg.players());
 
-            game.deny(GameRuleType.PVP)
-                    .deny(GameRuleType.USE_BLOCKS)
-                    .deny(GameRuleType.FALL_DAMAGE)
-                    .deny(GameRuleType.HUNGER)
-                    .deny(GameRuleType.CRAFTING)
-                    .deny(GameRuleType.PORTALS)
-                    .deny(GameRuleType.THROW_ITEMS)
-                    .deny(GameRuleType.INTERACTION)
-                    .deny(GameRuleType.PLACE_BLOCKS)
-                    .deny(GameRuleType.BREAK_BLOCKS)
-                    .deny(GameRuleType.MODIFY_INVENTORY);
+            DRUtil.setBaseGameRules(game);
 
             waiting.items.addBehavior("leave_game", (player, stack, hand) -> {
                 player.sendMessage(new TranslatableText("message.deathrun.left_game").formatted(Formatting.RED), false);
@@ -91,25 +83,26 @@ public class DRWaiting {
 
             game.listen(GameActivityEvents.REQUEST_START, waiting::requestStart);
             game.listen(GamePlayerEvents.OFFER, waiting.players::offerWaiting);
-            game.listen(GamePlayerEvents.REMOVE, waiting.players::onRemove);
+            game.listen(GamePlayerEvents.LEAVE, waiting.players::onLeave);
             game.listen(PlayerDeathEvent.EVENT, (player, source) -> {
                 player.setHealth(20f);
                 waiting.players.resetWaiting(player);
                 return ActionResult.FAIL;
             });
+            game.listen(GameActivityEvents.TICK, waiting.players::tick);
         });
     }
 
     private GameResult requestStart() {
-        // TODO: add the actual game
-        return GameResult.error(new LiteralText("Not Implemented"));
+        DRGame.open(game.getGameSpace(), this);
+        return GameResult.ok();
     }
 
     public static class Player extends DRPlayer {
         public DRTeam requestedTeam = null;
 
-        public Player(ServerPlayerEntity player) {
-            super(player);
+        public Player(ServerPlayerEntity player, DRPlayerLogic logic) {
+            super(player, logic);
         }
     }
 }

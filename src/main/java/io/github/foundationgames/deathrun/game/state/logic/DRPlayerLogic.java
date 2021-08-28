@@ -1,6 +1,5 @@
 package io.github.foundationgames.deathrun.game.state.logic;
 
-import com.google.common.collect.Lists;
 import io.github.foundationgames.deathrun.game.DeathRunConfig;
 import io.github.foundationgames.deathrun.game.map.DeathRunMap;
 import io.github.foundationgames.deathrun.game.state.DRGame;
@@ -13,14 +12,16 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.world.GameMode;
+import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.plasmid.game.GameActivity;
 import xyz.nucleoid.plasmid.game.player.PlayerOffer;
 import xyz.nucleoid.plasmid.game.player.PlayerOfferResult;
+import xyz.nucleoid.plasmid.game.player.PlayerSet;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
 
 import java.util.*;
 
-public class DRPlayerLogic {
+public class DRPlayerLogic implements PlayerSet {
     private final ServerWorld world;
     private final GameActivity game;
     private final DeathRunMap map;
@@ -39,7 +40,7 @@ public class DRPlayerLogic {
     }
 
     public List<DRPlayer> getPlayers(Random random) {
-        var list = Lists.newArrayList(getPlayers());
+        var list = new ArrayList<>(getPlayers());
         Collections.shuffle(list, random);
         return list;
     }
@@ -81,9 +82,31 @@ public class DRPlayerLogic {
         player.changeGameMode(GameMode.ADVENTURE);
     }
 
+    public void resetActive(ServerPlayerEntity player) {
+        var pl = get(player);
+
+        if (pl instanceof DRGame.Player gamePlayer) {
+            var spawn = gamePlayer.team == DRTeam.DEATHS ? map.deathStart : map.runnerStart;
+            var min = spawn.min();
+            var max = spawn.max();
+            var x = min.getX() + world.random.nextInt(max.getX() - min.getX()) + 0.5;
+            var z = min.getZ() + world.random.nextInt(max.getZ() - min.getZ()) + 0.5;
+            player.teleport(world, x, min.getY(), z, 0f, 0f);
+            pl.getPlayer().getInventory().clear();
+            if (gamePlayer.team == DRTeam.RUNNERS) {
+                var boostItem = ItemStackBuilder.of(Items.FEATHER)
+                        .setName(new TranslatableText("item.deathrun.boost_feather").styled(style -> style.withColor(0x9ce3ff).withItalic(false))).build();
+                DRItemLogic.apply("boost", boostItem);
+
+                player.getInventory().setStack(0, boostItem);
+            }
+        }
+        player.changeGameMode(GameMode.ADVENTURE);
+    }
+
     public static void sortTeams(Random random, DRPlayerLogic waiting, DRPlayerLogic game) {
         var waitingPlayers = waiting.getPlayers(random);
-        int maxDeaths = Math.min(3, (int)(waitingPlayers.size() * 0.17));
+        int maxDeaths = Math.min(3, (int)Math.ceil(waitingPlayers.size() * 0.17));
         var runners = new ArrayList<DRWaiting.Player>();
         var deaths = new ArrayList<DRWaiting.Player>();
         for (DRPlayer p : waitingPlayers) {
@@ -99,8 +122,7 @@ public class DRPlayerLogic {
             if (p instanceof DRWaiting.Player player &&
                     (!deaths.contains(player) && !runners.contains(player))
             ) {
-                var death = random.nextBoolean();
-                if (death && deaths.size() < maxDeaths) {
+                if (deaths.size() < maxDeaths) {
                     deaths.add(player);
                 } else {
                     runners.add(player);
@@ -108,19 +130,23 @@ public class DRPlayerLogic {
             }
         }
         for (DRWaiting.Player player : runners) {
-            game.add(new DRGame.Player(player.getPlayer(), DRTeam.RUNNERS));
+            game.add(new DRGame.Player(player.getPlayer(), game, DRTeam.RUNNERS));
         }
         for (DRWaiting.Player player : deaths) {
-            game.add(new DRGame.Player(player.getPlayer(), DRTeam.DEATHS));
+            game.add(new DRGame.Player(player.getPlayer(), game, DRTeam.DEATHS));
         }
     }
 
-    public void onRemove(ServerPlayerEntity player) {
+    public void tick() {
+        this.getPlayers().forEach(DRPlayer::tick);
+    }
+
+    public void onLeave(ServerPlayerEntity player) {
         this.players.remove(player);
     }
 
     public PlayerOfferResult offerWaiting(PlayerOffer offer) {
-        this.add(new DRWaiting.Player(offer.player()));
+        this.add(new DRWaiting.Player(offer.player(), this));
         return offer.accept(world, map.spawn.centerBottom())
                 .and(() -> this.resetWaiting(offer.player()));
     }
@@ -135,5 +161,27 @@ public class DRPlayerLogic {
 
     public DRPlayer get(ServerPlayerEntity player) {
         return this.players.get(player);
+    }
+
+    @Override
+    public boolean contains(UUID id) {
+        var player = world.getPlayerByUuid(id);
+        return player instanceof ServerPlayerEntity && players.containsKey(player);
+    }
+
+    @Override
+    public @Nullable ServerPlayerEntity getEntity(UUID id) {
+        var player = world.getPlayerByUuid(id);
+        return player instanceof ServerPlayerEntity sPlayer ? sPlayer : null;
+    }
+
+    @Override
+    public int size() {
+        return players.size();
+    }
+
+    @Override
+    public Iterator<ServerPlayerEntity> iterator() {
+        return players.keySet().iterator();
     }
 }

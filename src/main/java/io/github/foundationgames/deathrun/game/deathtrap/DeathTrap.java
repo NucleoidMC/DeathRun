@@ -25,4 +25,10 @@ public class DeathTrap {
     public static DeathTrap get(String name) {
         return ENTRIES.getOrDefault(name, NO_OP);
     }
+
+    public static void init() {
+        DripleafDeathTrap.init();
+        LightningDeathTrap.init();
+        DripstoneDeathTrap.init();
+    }
 }

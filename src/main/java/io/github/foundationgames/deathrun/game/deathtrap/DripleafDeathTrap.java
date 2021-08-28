@@ -17,14 +17,15 @@ public class DripleafDeathTrap extends DeathTrap {
         for (BlockPos pos : zone) {
             var state = world.getBlockState(pos);
             if (state.isOf(Blocks.BIG_DRIPLEAF)) {
-                world.setBlockState(pos, state.with(Properties.TILT, Tilt.NONE));
+                world.setBlockState(pos, state.with(Properties.TILT, Tilt.FULL));
+                world.getBlockTickScheduler().schedule(pos, state.getBlock(), 69);
             }
         }
         var center = zone.center();
         world.playSound(null, center.x, center.y, center.z, SoundEvents.BLOCK_BIG_DRIPLEAF_FALL, SoundCategory.BLOCKS, 2.0f, 1.0f);
     }
 
-    static {
+    public static void init() {
         DeathTrap.add("dripleaf", new DripleafDeathTrap());
     }
 }

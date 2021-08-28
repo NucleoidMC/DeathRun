@@ -6,9 +6,14 @@
     "item.deathrun.request_death": "Request Death",
     "item.deathrun.request_clear": "Clear Requests",
     "item.deathrun.runners_only": "Runners Only!",
+    "item.deathrun.boost_feather": "Boost Feather",
 
     "message.deathrun.left_game": "Left game of DeathRun!",
     "message.deathrun.requested_runner": "Requested to be a Runner.",
     "message.deathrun.requested_death": "Requested to be a Death.",
-    "message.deathrun.cleared_requests": "Cleared your team requests."
+    "message.deathrun.cleared_requests": "Cleared your team requests.",
+
+    "status.deathrun.in_progress": "Game is currently in progress!",
+
+    "title.deathrun.run": "RUN!"
 }

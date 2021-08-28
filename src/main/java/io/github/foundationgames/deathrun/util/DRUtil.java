@@ -5,6 +5,8 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.util.math.BlockPos;
+import xyz.nucleoid.plasmid.game.GameActivity;
+import xyz.nucleoid.plasmid.game.rule.GameRuleType;
 
 public enum DRUtil {;
     public static BlockPos blockPos(NbtCompound nbt) throws IllegalStateException {
@@ -40,5 +42,19 @@ public enum DRUtil {;
 
     public static ItemStack createClearHead() {
         return createHead(new int[]{-74133895, 960054678, -1984242782, -548259249}, "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZWZlNWNmMjZkZGJiZTc4NTI2MGY3ZTFjOWRmN2JjMmY1NTFiYWRjNGFlNGEyMTE4YjFjZTFkYjljYWZiMjYzMyJ9fX0=");
+    }
+
+    public static void setBaseGameRules(GameActivity game) {
+        game.deny(GameRuleType.PVP)
+                .deny(GameRuleType.USE_BLOCKS)
+                .deny(GameRuleType.FALL_DAMAGE)
+                .deny(GameRuleType.HUNGER)
+                .deny(GameRuleType.CRAFTING)
+                .deny(GameRuleType.PORTALS)
+                .deny(GameRuleType.THROW_ITEMS)
+                .deny(GameRuleType.INTERACTION)
+                .deny(GameRuleType.PLACE_BLOCKS)
+                .deny(GameRuleType.BREAK_BLOCKS)
+                .deny(GameRuleType.MODIFY_INVENTORY);
     }
 }
