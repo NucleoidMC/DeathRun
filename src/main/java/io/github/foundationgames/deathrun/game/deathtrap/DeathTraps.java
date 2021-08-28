@@ -3,9 +3,9 @@ package io.github.foundationgames.deathrun.game.deathtrap;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import io.github.foundationgames.deathrun.DeathRun;
-import io.github.foundationgames.deathrun.game.deathtrap.traps.DripleafDeathTrap;
-import io.github.foundationgames.deathrun.game.deathtrap.traps.DripstoneDeathTrap;
-import io.github.foundationgames.deathrun.game.deathtrap.traps.LightningDeathTrap;
+import io.github.foundationgames.deathrun.game.deathtrap.type.DripleafDeathTrap;
+import io.github.foundationgames.deathrun.game.deathtrap.type.DripstoneDeathTrap;
+import io.github.foundationgames.deathrun.game.deathtrap.type.LightningDeathTrap;
 import net.minecraft.util.Identifier;
 import xyz.nucleoid.plasmid.registry.TinyRegistry;
 

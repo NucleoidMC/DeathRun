@@ -1,4 +1,4 @@
-package io.github.foundationgames.deathrun.game.deathtrap.traps;
+package io.github.foundationgames.deathrun.game.deathtrap.type;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
