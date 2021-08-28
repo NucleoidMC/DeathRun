@@ -12,6 +12,8 @@ import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.entity.LightningEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.property.Properties;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.TranslatableText;
@@ -89,11 +91,11 @@ public class DRGame {
                 var pos = hit.getBlockPos();
                 var state = world.getBlockState(pos);
                 if (state.getBlock() instanceof AbstractButtonBlock button && !state.get(Properties.POWERED)) {
-                    var deathTrap = map.deathTraps.get(pos);
-                    if (deathTrap != null) {
+                    var trapZone = map.trapZones.get(pos);
+                    if (trapZone != null) {
                         world.setBlockState(pos, state.with(Properties.POWERED, true));
                         world.getBlockTickScheduler().schedule(pos, button, DEATH_TRAP_COOLDOWN);
-                        deathTrap.deathTrap.trigger(world, deathTrap.bounds);
+                        trapZone.getTrap().trigger(world, trapZone.getZone());
                         // TODO: death trap resetting
                         return ActionResult.SUCCESS;
                     }
@@ -115,10 +117,12 @@ public class DRGame {
                 int sec = timer / 20;
                 var format = sec <= 3 ? Formatting.GREEN : Formatting.DARK_GREEN;
                 players.showTitle(new LiteralText(Integer.toString(sec)).formatted(Formatting.BOLD, format), 19);
+                players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.PLAYERS, 1.0F, 1.0F);
             }
             timer--;
             if (timer == 0) {
                 players.showTitle(new TranslatableText("title.deathrun.run").formatted(Formatting.BOLD, Formatting.GOLD), 40);
+                players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.PLAYERS, 1.0F, 2.0F);
                 openGate();
             }
         }
