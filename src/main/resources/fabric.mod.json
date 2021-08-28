@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "deathrun",
+  "version": "${version}",
+  "name": "DeathRun",
+  "description": "Runners avoid traps triggered by Deaths and get to the finish line",
+  "authors": [
+    "FoundationGames"
+  ],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "io.github.foundationgames.deathrun.DeathRun"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.9.1",
+    "fabric": "*",
+    "minecraft": "1.17.x",
+    "plasmid": "0.5.x"
+  }
+}

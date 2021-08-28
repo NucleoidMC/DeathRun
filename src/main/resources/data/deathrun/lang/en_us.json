@@ -1,0 +1,14 @@
+{
+    "game.deathrun.deathrun": "DeathRun",
+
+    "item.deathrun.leave_game": "Leave Game",
+    "item.deathrun.request_runner": "Request Runner",
+    "item.deathrun.request_death": "Request Death",
+    "item.deathrun.request_clear": "Clear Requests",
+    "item.deathrun.runners_only": "Runners Only!",
+
+    "message.deathrun.left_game": "Left game of DeathRun!",
+    "message.deathrun.requested_runner": "Requested to be a Runner.",
+    "message.deathrun.requested_death": "Requested to be a Death.",
+    "message.deathrun.cleared_requests": "Cleared your team requests."
+}

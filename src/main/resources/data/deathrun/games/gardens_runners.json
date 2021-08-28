@@ -1,0 +1,17 @@
+{
+    "type": "deathrun:deathrun",
+    "runners_only": true,
+    "map": {
+        "time": 10000,
+        "map_id": "deathrun:gardens"
+    },
+    "players": {
+        "min": 2,
+        "max": 24,
+        "threshold": 4,
+        "countdown": {
+            "ready_seconds": 10,
+            "full_seconds": 60
+        }
+    }
+}
