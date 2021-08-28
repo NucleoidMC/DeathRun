@@ -10,6 +10,7 @@ import net.minecraft.block.AbstractButtonBlock;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.entity.LightningEntity;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -117,12 +118,14 @@ public class DRGame {
                 int sec = timer / 20;
                 var format = sec <= 3 ? Formatting.GREEN : Formatting.DARK_GREEN;
                 players.showTitle(new LiteralText(Integer.toString(sec)).formatted(Formatting.BOLD, format), 19);
-                players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.PLAYERS, 1.0F, 1.0F);
+                players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_HAT, SoundCategory.PLAYERS, 1.0f, 1.0f);
+                if (sec <= 3) players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS, SoundCategory.PLAYERS, 1.0f, 1.0f);
             }
             timer--;
             if (timer == 0) {
                 players.showTitle(new TranslatableText("title.deathrun.run").formatted(Formatting.BOLD, Formatting.GOLD), 40);
-                players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.PLAYERS, 1.0F, 2.0F);
+                players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_PLING, SoundCategory.PLAYERS, 1.0f, 1.0f);
+                players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS, SoundCategory.PLAYERS, 1.0f, 0.5f);
                 openGate();
             }
         }
@@ -138,13 +141,13 @@ public class DRGame {
             player -> {
                 var serverP = player.getPlayer();
                 var world = serverP.world;
-                return world.getBlockState(new BlockPos(serverP.getPos().add(0, 0.65, 0))).isOf(Blocks.WATER);
+                return world.getFluidState(new BlockPos(serverP.getPos().add(0, 0.65, 0))).getFluid() == Fluids.WATER;
             },
             // Lightning death
             player -> {
                 var serverP = player.getPlayer();
                 var world = serverP.world;
-                return world.getEntitiesByClass(LightningEntity.class, serverP.getBoundingBox().expand(1, 0, 1), e -> true).size() > 0;
+                return world.getEntitiesByClass(LightningEntity.class, serverP.getBoundingBox().expand(1.5, 1.5, 1.5), e -> true).size() > 0;
             },
             // Falling hazard death
             player -> {
