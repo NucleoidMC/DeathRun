@@ -1,5 +1,7 @@
-package io.github.foundationgames.deathrun.game.deathtrap;
+package io.github.foundationgames.deathrun.game.deathtrap.traps;
 
+import com.mojang.serialization.Codec;
+import io.github.foundationgames.deathrun.game.deathtrap.DeathTrap;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.enums.Tilt;
 import net.minecraft.server.world.ServerWorld;
@@ -10,7 +12,7 @@ import net.minecraft.util.math.BlockPos;
 import xyz.nucleoid.map_templates.BlockBounds;
 
 public class DripleafDeathTrap extends DeathTrap {
-    protected DripleafDeathTrap() {}
+    public static final Codec<DripleafDeathTrap> CODEC = Codec.unit(DripleafDeathTrap::new);
 
     @Override
     public void trigger(ServerWorld world, BlockBounds zone) {
@@ -25,7 +27,8 @@ public class DripleafDeathTrap extends DeathTrap {
         world.playSound(null, center.x, center.y, center.z, SoundEvents.BLOCK_BIG_DRIPLEAF_FALL, SoundCategory.BLOCKS, 2.0f, 1.0f);
     }
 
-    public static void init() {
-        DeathTrap.add("dripleaf", new DripleafDeathTrap());
+    @Override
+    public Codec<? extends DeathTrap> getCodec() {
+        return CODEC;
     }
 }

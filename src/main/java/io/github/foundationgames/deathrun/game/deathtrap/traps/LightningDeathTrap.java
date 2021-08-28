@@ -1,5 +1,7 @@
-package io.github.foundationgames.deathrun.game.deathtrap;
+package io.github.foundationgames.deathrun.game.deathtrap.traps;
 
+import com.mojang.serialization.Codec;
+import io.github.foundationgames.deathrun.game.deathtrap.DeathTrap;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.server.world.ServerWorld;
@@ -8,7 +10,7 @@ import net.minecraft.util.math.Vec3d;
 import xyz.nucleoid.map_templates.BlockBounds;
 
 public class LightningDeathTrap extends DeathTrap {
-    protected LightningDeathTrap() {}
+    public static final Codec<LightningDeathTrap> CODEC = Codec.unit(LightningDeathTrap::new);
 
     @Override
     public void trigger(ServerWorld world, BlockBounds zone) {
@@ -22,7 +24,8 @@ public class LightningDeathTrap extends DeathTrap {
         }
     }
 
-    public static void init() {
-        DeathTrap.add("lightning", new LightningDeathTrap());
+    @Override
+    public Codec<? extends DeathTrap> getCodec() {
+        return CODEC;
     }
 }

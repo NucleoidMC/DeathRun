@@ -1,5 +1,8 @@
-package io.github.foundationgames.deathrun.game.deathtrap;
+package io.github.foundationgames.deathrun.game.deathtrap.traps;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import io.github.foundationgames.deathrun.game.deathtrap.DeathTrap;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.enums.Thickness;
@@ -12,15 +15,23 @@ import net.minecraft.util.math.Vec3d;
 import xyz.nucleoid.map_templates.BlockBounds;
 
 public class DripstoneDeathTrap extends DeathTrap {
+    public static final Codec<DripstoneDeathTrap> CODEC = RecordCodecBuilder.create(instance ->
+            instance.group(
+                    Codec.INT.optionalFieldOf("length", 2).forGetter(trap -> trap.length)
+            ).apply(instance, DripstoneDeathTrap::new)
+    );
+
     private static final BlockState[] dripstoneStates = {
             dripstoneState(Thickness.TIP),
             dripstoneState(Thickness.FRUSTUM),
             dripstoneState(Thickness.MIDDLE)
     };
 
-    private static final int length = 2;
+    private final int length;
 
-    protected DripstoneDeathTrap() {}
+    public DripstoneDeathTrap(int length) {
+        this.length = length;
+    }
 
     @Override
     public void trigger(ServerWorld world, BlockBounds zone) {
@@ -46,7 +57,8 @@ public class DripstoneDeathTrap extends DeathTrap {
                 .with(Properties.THICKNESS, thickness);
     }
 
-    public static void init() {
-        DeathTrap.add("dripstone", new DripstoneDeathTrap());
+    @Override
+    public Codec<? extends DeathTrap> getCodec() {
+        return CODEC;
     }
 }
