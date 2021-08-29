@@ -3,6 +3,8 @@ package io.github.foundationgames.deathrun.game.element.deathtrap;
 import com.mojang.serialization.Codec;
 import io.github.foundationgames.deathrun.game.element.DeathTrap;
 import net.minecraft.block.Blocks;
+import net.minecraft.network.packet.s2c.play.ParticleS2CPacket;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -16,8 +18,9 @@ public class PowderedSnowDeathTrap extends ResettingDeathTrap {
     public void trigger(ServerWorld world, BlockBounds zone) {
         for (BlockPos pos : zone) {
             var state = world.getBlockState(pos);
-            if (state.isOf(Blocks.SNOW)) {
+            if (state.isOf(Blocks.SNOW_BLOCK)) {
                 world.setBlockState(pos, Blocks.POWDER_SNOW.getDefaultState());
+                world.getPlayers().forEach(p -> p.networkHandler.sendPacket(new ParticleS2CPacket(ParticleTypes.CLOUD, false, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, 0, 0, 0, 0, 1)));
             }
         }
         var center = zone.center();
@@ -29,7 +32,7 @@ public class PowderedSnowDeathTrap extends ResettingDeathTrap {
         for (BlockPos pos : zone) {
             var state = world.getBlockState(pos);
             if (state.isOf(Blocks.POWDER_SNOW)) {
-                world.setBlockState(pos, Blocks.SNOW.getDefaultState());
+                world.setBlockState(pos, Blocks.SNOW_BLOCK.getDefaultState());
             }
         }
         var center = zone.center();

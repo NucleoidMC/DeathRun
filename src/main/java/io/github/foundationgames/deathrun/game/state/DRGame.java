@@ -32,6 +32,7 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import xyz.nucleoid.plasmid.game.GameActivity;
+import xyz.nucleoid.plasmid.game.GameCloseReason;
 import xyz.nucleoid.plasmid.game.GameSpace;
 import xyz.nucleoid.plasmid.game.event.GameActivityEvents;
 import xyz.nucleoid.plasmid.game.event.GamePlayerEvents;
@@ -57,8 +58,15 @@ public class DRGame {
     private final Map<Player, Integer> finished = new HashMap<>();
 
     private static final int DEATH_TRAP_COOLDOWN = 10 * 20; // 10 seconds
+    private static final int END_COUNTDOWN = 100 * 20; // 100 seconds
+    private static final int FINISH_TIMER = 3 * 20; // 3 seconds
+    private static final LiteralText LINE = new LiteralText("----");
 
-    private int timer = 10 * 20; // 10 seconds
+    private int startTimer = 10 * 20; // 10 seconds
+
+    // Timers, disabled (-1) until set to their time
+    private int endCountdown = -1;
+    private int finishTimer = -1;
 
     public DRGame(GameActivity game, DRWaiting waiting) {
         this.world = waiting.world;
@@ -82,10 +90,10 @@ public class DRGame {
             deathRun.items.addBehavior("boost", (player, stack, hand) -> {
                 if (deathRun.players.get(player) instanceof Player gamePl && gamePl.started && !gamePl.finished && !player.getItemCooldownManager().isCoolingDown(stack.getItem())) {
                     double yaw = Math.toRadians(-player.getYaw());
-                    var vel = new Vec3d(2 * Math.sin(yaw), 0.6, 2 * Math.cos(yaw));
+                    var vel = new Vec3d(2 * Math.sin(yaw), 0.5, 2 * Math.cos(yaw));
                     player.networkHandler.sendPacket(new EntityVelocityUpdateS2CPacket(player.getId(), vel));
                     deathRun.world.getPlayers().forEach(p -> p.networkHandler.sendPacket(new ParticleS2CPacket(ParticleTypes.EXPLOSION, false, player.getX(), player.getY(), player.getZ(), 0, 0, 0, 0, 1)));
-                    player.playSound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, SoundCategory.PLAYERS, 0.75f, 0.69f);
+                    deathRun.players.playSound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, SoundCategory.PLAYERS, 0.75f, 0.69f);
                     player.getItemCooldownManager().set(stack.getItem(), 150);
                     return TypedActionResult.success(stack);
                 }
@@ -153,13 +161,21 @@ public class DRGame {
     }
 
     public String getLocalizationForPlace(int place) {
-        if (place > 10 && place < 20) return "insert.deathrun.xrd_place";
+        if (place > 10 && place < 20) return "insert.deathrun.xth_place";
         int lastDigit = place % 10;
         return switch (lastDigit) {
             case 1 -> "insert.deathrun.xst_place";
             case 2 -> "insert.deathrun.xnd_place";
-            default -> "insert.deathrun.xrd_place";
+            case 3 -> "insert.deathrun.xrd_place";
+            default -> "insert.deathrun.xth_place";
         };
+    }
+
+    public void markFinished(Player player) {
+        var pl = player.getPlayer();
+        pl.setInvisible(true);
+        pl.getInventory().clear();
+        player.finished = true;
     }
 
     public void finish(Player player) {
@@ -179,8 +195,21 @@ public class DRGame {
         var pl = player.getPlayer();
 
         pl.sendMessage(text, false);
-        pl.setInvisible(true);
-        pl.getInventory().clear();
+        markFinished(player);
+
+        if (place == 1) {
+            pl.playSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.MASTER, 0.85f, 0.95f);
+            pl.playSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.MASTER, 0.85f, 0.59f);
+            pl.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS, SoundCategory.MASTER, 0.85f, 0.95f);
+            pl.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1, 1);
+            pl.playSound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.MASTER, 0.45f, 2);
+
+            this.endCountdown = END_COUNTDOWN;
+        } else {
+            pl.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.MASTER, 1, 0.945f);
+            pl.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.MASTER, 1, 0.59f);
+            pl.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS, SoundCategory.MASTER, 0.85f, 0.785f);
+        }
 
         var broadcast = new TranslatableText("message.deathrun.player_finished", pl.getEntityName()).formatted(Formatting.LIGHT_PURPLE)
                 .append(new TranslatableText(getLocalizationForPlace(place), place).styled(style -> style.withColor(getColorForPlace(place))))
@@ -190,24 +219,76 @@ public class DRGame {
                 p.sendMessage(broadcast, false);
             }
         });
+
+        boolean allFinished = true;
+        for (var drp : players.getPlayers()) {
+            if (drp instanceof Player gamePlayer) {
+                if (gamePlayer.team == DRTeam.RUNNERS && !gamePlayer.isFinished()) {
+                    allFinished = false;
+                    break;
+                }
+            }
+        }
+        if (allFinished) {
+            end();
+        }
+    }
+
+    public void start() {
+        startTimer = 0;
+        players.getPlayers().forEach(p -> { if (p instanceof Player pl) pl.onStart(); });
+        openGate();
+    }
+
+    public void end() {
+        endCountdown = -1;
+        finishTimer = FINISH_TIMER;
+        players.getPlayers().forEach(drp -> {
+            if (drp instanceof Player player && player.team == DRTeam.RUNNERS && !player.isFinished()) {
+                markFinished(player);
+            }
+        });
+        // TODO: report rankings
+        players.forEach(pl -> pl.sendMessage(new LiteralText("Game has ended, rankings WIP"), false));
     }
 
     public void tick() {
-        if (timer > 0) {
-            if (timer % 20 == 0) {
-                int sec = timer / 20;
+        if (startTimer > 0) {
+            if (startTimer % 20 == 0) {
+                int sec = startTimer / 20;
                 var format = sec <= 3 ? Formatting.GREEN : Formatting.DARK_GREEN;
                 players.showTitle(new LiteralText(Integer.toString(sec)).formatted(Formatting.BOLD, format), 19);
                 players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_HAT, SoundCategory.PLAYERS, 1.0f, 1.0f);
                 if (sec <= 3) players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS, SoundCategory.PLAYERS, 1.0f, 1.0f);
             }
-            timer--;
-            if (timer == 0) {
+            startTimer--;
+            if (startTimer == 0) {
                 players.showTitle(new TranslatableText("title.deathrun.run").formatted(Formatting.BOLD, Formatting.GOLD), 40);
                 players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_PLING, SoundCategory.PLAYERS, 1.0f, 1.0f);
                 players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS, SoundCategory.PLAYERS, 1.0f, 0.5f);
-                players.getPlayers().forEach(p -> { if (p instanceof Player pl) pl.onStart(); });
-                openGate();
+                start();
+            }
+        }
+        if (endCountdown > 0) {
+            players.getPlayers().forEach(drPlayer -> {
+                if (drPlayer instanceof Player player) {
+                    var pl = player.getPlayer();
+                    var key = "message.deathrun.game_ends_in";
+                    if (player.team == DRTeam.RUNNERS && !player.finished) {
+                        key = "message.deathrun.seconds_to_finish";
+                    }
+                    pl.sendMessage(new TranslatableText(key, (int)((float)endCountdown / 20)), true);
+                }
+            });
+            endCountdown--;
+            if (endCountdown == 0) {
+                end();
+            }
+        }
+        if (finishTimer > 0) {
+            finishTimer--;
+            if (finishTimer == 0) {
+                game.getGameSpace().close(GameCloseReason.FINISHED);
             }
         }
 
@@ -295,7 +376,6 @@ public class DRGame {
                     }
                 }
                 if (!finished && game.map.finish.contains(pos)) {
-                    this.finished = true;
                     game.finish(this);
                 }
             }

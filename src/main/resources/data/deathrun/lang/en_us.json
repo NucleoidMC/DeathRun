@@ -15,11 +15,16 @@
     "message.deathrun.checkpoint": "Checkpoint Reached!",
     "message.deathrun.finished": "You finished in ",
     "message.deathrun.player_finished": "%s finished in ",
-    "message.deathrun.game_ended": "The game has ended!",
+    "message.deathrun.game_ended": "DeathRun has ended!",
+    "message.deathrun.rankings": "Rankings:",
+    "message.deathrun.your_place": "You (%s) came in ",
+    "message.deathrun.seconds_to_finish": "You have %s seconds to reach the finish!",
+    "message.deathrun.game_ends_in": "Game ends in %s seconds!",
 
     "insert.deathrun.xst_place": "%sst Place! ",
     "insert.deathrun.xnd_place": "%snd Place! ",
     "insert.deathrun.xrd_place": "%srd Place! ",
+    "insert.deathrun.xth_place": "%sth Place! ",
     "insert.deathrun.time": "(%sm %ss)",
 
     "status.deathrun.in_progress": "Game is currently in progress!",
