@@ -54,6 +54,7 @@ public enum DRUtil {
                 .deny(GameRuleType.INTERACTION)
                 .deny(GameRuleType.PLACE_BLOCKS)
                 .deny(GameRuleType.BREAK_BLOCKS)
-                .deny(GameRuleType.MODIFY_INVENTORY);
+                .deny(GameRuleType.MODIFY_INVENTORY)
+                .deny(GameRuleType.MODIFY_ARMOR);
     }
 }

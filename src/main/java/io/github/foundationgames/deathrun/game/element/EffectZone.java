@@ -17,7 +17,7 @@ public record EffectZone(BlockBounds bounds, Effect effect) {
 
         public StatusEffectInstance createEffect() {
             if (!Registry.STATUS_EFFECT.containsId(id)) return null;
-            return new StatusEffectInstance(Registry.STATUS_EFFECT.get(id), 5, amplifier, true, false, false);
+            return new StatusEffectInstance(Registry.STATUS_EFFECT.get(id), 5, amplifier, true, false, true);
         }
     }
 }

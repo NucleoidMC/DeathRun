@@ -14,6 +14,8 @@ import net.minecraft.block.AbstractButtonBlock;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.entity.LightningEntity;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ParticleS2CPacket;
@@ -91,11 +93,11 @@ public class DRGame {
             deathRun.items.addBehavior("boost", (player, stack, hand) -> {
                 if (deathRun.players.get(player) instanceof Player gamePl && gamePl.started && !gamePl.finished && !player.getItemCooldownManager().isCoolingDown(stack.getItem())) {
                     double yaw = Math.toRadians(-player.getYaw());
-                    var vel = new Vec3d(2 * Math.sin(yaw), 0.5, 2 * Math.cos(yaw));
+                    var vel = new Vec3d(1.25 * Math.sin(yaw), 0.5, 1.25 * Math.cos(yaw));
                     player.networkHandler.sendPacket(new EntityVelocityUpdateS2CPacket(player.getId(), vel));
                     deathRun.world.getPlayers().forEach(p -> p.networkHandler.sendPacket(new ParticleS2CPacket(ParticleTypes.EXPLOSION, false, player.getX(), player.getY(), player.getZ(), 0, 0, 0, 0, 1)));
                     deathRun.players.playSound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, SoundCategory.PLAYERS, 0.75f, 0.69f);
-                    player.getItemCooldownManager().set(stack.getItem(), 150);
+                    player.getItemCooldownManager().set(stack.getItem(), 188);
                     return TypedActionResult.success(stack);
                 }
                 return TypedActionResult.pass(stack);
@@ -174,7 +176,6 @@ public class DRGame {
 
     public void markFinished(Player player) {
         var pl = player.getPlayer();
-        pl.setInvisible(true);
         pl.getInventory().clear();
         player.finished = true;
     }
@@ -253,7 +254,7 @@ public class DRGame {
     }
 
     public void broadcastRankings() {
-        var header = new LiteralText("---- ").append(new TranslatableText("message.deathrun.game_ended").formatted(Formatting.RED).append(new LiteralText(" ----").formatted(Formatting.RESET)));
+        var header = new LiteralText("---- ").formatted(Formatting.GRAY).append(new TranslatableText("message.deathrun.game_ended").formatted(Formatting.RED).append(new LiteralText(" ----").formatted(Formatting.GRAY)));
         var pedestal = new ArrayList<Text>();
         var places = new ArrayList<>(finished.keySet());
         for (int i = 0; i <= 2; i++) {
@@ -279,7 +280,7 @@ public class DRGame {
                             .formatted(Formatting.BLUE)
                             .append(new TranslatableText(getLocalizationForPlace(place), place)
                                     .styled(style -> style.withColor(getColorForPlace(place)).withBold(true))), false);
-                } else {
+                } else if (gamePlayer.team == DRTeam.RUNNERS) {
                     pl.sendMessage(new TranslatableText("message.deathrun.did_not_finish", pl.getEntityName()).formatted(Formatting.BLUE), false);
                 }
             }
@@ -409,7 +410,9 @@ public class DRGame {
                         break;
                     }
                 }
-                if (!finished && game.map.finish.contains(pos)) {
+                if (finished) {
+                    getPlayer().addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, 5, 0, true, false, false));
+                } else if (game.map.finish.contains(pos)) {
                     game.finish(this);
                 }
             }
@@ -419,6 +422,9 @@ public class DRGame {
                 if (zone.bounds().contains(pos.getX(), pos.getY(), pos.getZ())) {
                     getPlayer().addStatusEffect(zone.effect().createEffect());
                 }
+            }
+            if (team == DRTeam.DEATHS) {
+                getPlayer().addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 5, 3, true, false, false));
             }
         }
 
