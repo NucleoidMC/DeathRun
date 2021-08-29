@@ -11,7 +11,7 @@
         "threshold": 4,
         "countdown": {
             "ready_seconds": 10,
-            "full_seconds": 60
+            "full_seconds": 30
         }
     }
 }

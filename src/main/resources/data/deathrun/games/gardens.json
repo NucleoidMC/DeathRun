@@ -10,8 +10,8 @@
         "max": 24,
         "threshold": 6,
         "countdown": {
-            "ready_seconds": 15,
-            "full_seconds": 90
+            "ready_seconds": 10,
+            "full_seconds": 45
         }
     }
 }
