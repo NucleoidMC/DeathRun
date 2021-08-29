@@ -1,11 +1,9 @@
-package io.github.foundationgames.deathrun.game.deathtrap;
+package io.github.foundationgames.deathrun.game.element;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import io.github.foundationgames.deathrun.DeathRun;
-import io.github.foundationgames.deathrun.game.deathtrap.type.DripleafDeathTrap;
-import io.github.foundationgames.deathrun.game.deathtrap.type.DripstoneDeathTrap;
-import io.github.foundationgames.deathrun.game.deathtrap.type.LightningDeathTrap;
+import io.github.foundationgames.deathrun.game.element.deathtrap.*;
 import net.minecraft.util.Identifier;
 import xyz.nucleoid.plasmid.registry.TinyRegistry;
 
@@ -18,6 +16,8 @@ public class DeathTraps {
     public static final Identifier DRIPLEAF = register("dripleaf", DripleafDeathTrap.CODEC);
     public static final Identifier LIGHTNING = register("lightning", LightningDeathTrap.CODEC);
     public static final Identifier DRIPSTONE = register("dripstone", DripstoneDeathTrap.CODEC);
+    public static final Identifier POWDERED_SNOW = register("powdered_snow", PowderedSnowDeathTrap.CODEC);
+    public static final Identifier INVISIBLE_PATH = register("invisible_path", InvisiblePathDeathTrap.CODEC);
 
     public static Identifier getId(DeathTrap piece) {
         return REGISTRY.getIdentifier(piece.getCodec());

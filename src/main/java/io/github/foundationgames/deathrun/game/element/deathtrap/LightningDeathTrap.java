@@ -1,7 +1,7 @@
-package io.github.foundationgames.deathrun.game.deathtrap.type;
+package io.github.foundationgames.deathrun.game.element.deathtrap;
 
 import com.mojang.serialization.Codec;
-import io.github.foundationgames.deathrun.game.deathtrap.DeathTrap;
+import io.github.foundationgames.deathrun.game.element.DeathTrap;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.server.world.ServerWorld;

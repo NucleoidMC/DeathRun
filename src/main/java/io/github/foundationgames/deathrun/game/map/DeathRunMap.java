@@ -4,7 +4,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.DataResult;
-import io.github.foundationgames.deathrun.game.deathtrap.DeathTrapZone;
+import io.github.foundationgames.deathrun.game.element.CheckpointZone;
+import io.github.foundationgames.deathrun.game.element.DeathTrapZone;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.LiteralText;
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
 public class DeathRunMap {
     public final MapTemplate template;
     public final Map<BlockPos, DeathTrapZone> trapZones;
-    public final List<BlockBounds> checkpoints;
+    public final List<CheckpointZone> checkpoints;
     public final BlockBounds spawn;
     public final BlockBounds runnerStart;
     public final BlockBounds deathStart;
@@ -33,7 +34,7 @@ public class DeathRunMap {
     public final BlockBounds finish;
     public final int time;
 
-    public DeathRunMap(MapTemplate template, Map<BlockPos, DeathTrapZone> deathTraps, List<BlockBounds> checkpoints, BlockBounds spawn, BlockBounds runnerStart, BlockBounds deathStart, BlockBounds gate, BlockBounds finish, int time) {
+    public DeathRunMap(MapTemplate template, Map<BlockPos, DeathTrapZone> deathTraps, List<CheckpointZone> checkpoints, BlockBounds spawn, BlockBounds runnerStart, BlockBounds deathStart, BlockBounds gate, BlockBounds finish, int time) {
         this.template = template;
         this.trapZones = deathTraps;
         this.checkpoints = checkpoints;
@@ -67,8 +68,13 @@ public class DeathRunMap {
             });
         }
 
-        var checkpoints = ImmutableList.<BlockBounds>builder();
-        template.getMetadata().getRegions("checkpoint").forEach(reg -> checkpoints.add(reg.getBounds()));
+        var checkpoints = ImmutableList.<CheckpointZone>builder();
+        template.getMetadata().getRegions("checkpoint").forEach(reg -> {
+            var bounds = reg.getBounds();
+            float yaw = 0;
+            if (reg.getData().contains("yaw")) yaw = reg.getData().getFloat("yaw");
+            checkpoints.add(new CheckpointZone(bounds, yaw));
+        });
 
         var spawn = template.getMetadata().getFirstRegionBounds("spawn");
         var runnerStart = template.getMetadata().getFirstRegionBounds("runner_start");

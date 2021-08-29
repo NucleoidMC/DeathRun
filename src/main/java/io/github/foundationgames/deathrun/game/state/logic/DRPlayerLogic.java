@@ -86,14 +86,33 @@ public class DRPlayerLogic implements PlayerSet {
         var pl = get(player);
 
         if (pl instanceof DRGame.Player gamePlayer) {
-            var spawn = gamePlayer.team == DRTeam.DEATHS ? map.deathStart : map.runnerStart;
-            var min = spawn.min();
-            var max = spawn.max();
-            var x = min.getX() + world.random.nextInt(max.getX() - min.getX()) + 0.5;
-            var z = min.getZ() + world.random.nextInt(max.getZ() - min.getZ()) + 0.5;
-            player.teleport(world, x, min.getY(), z, 0f, 0f);
+            var spawn = map.deathStart;
+            float spawnYaw = 0;
+            boolean randomPos = true;
+            if (gamePlayer.team == DRTeam.RUNNERS && !gamePlayer.isFinished()) {
+                var checkpoint = gamePlayer.getCheckpoint();
+                if (checkpoint == null) spawn = map.runnerStart;
+                else {
+                    spawn = checkpoint.bounds();
+                    spawnYaw = checkpoint.yaw();
+                    randomPos = false;
+                }
+            }
+            double x;
+            double z;
+            if (randomPos) {
+                var min = spawn.min();
+                var max = spawn.max();
+                x = min.getX() + world.random.nextInt(max.getX() - min.getX()) + 0.5;
+                z = min.getZ() + world.random.nextInt(max.getZ() - min.getZ()) + 0.5;
+            } else {
+                var center = spawn.center();
+                x = center.x;
+                z = center.z;
+            }
+            player.teleport(world, x, spawn.min().getY(), z, spawnYaw, 0f);
             pl.getPlayer().getInventory().clear();
-            if (gamePlayer.team == DRTeam.RUNNERS) {
+            if (gamePlayer.team == DRTeam.RUNNERS && !gamePlayer.isFinished()) {
                 var boostItem = ItemStackBuilder.of(Items.FEATHER)
                         .setName(new TranslatableText("item.deathrun.boost_feather").styled(style -> style.withColor(0x9ce3ff).withItalic(false))).build();
                 DRItemLogic.apply("boost", boostItem);
@@ -104,7 +123,8 @@ public class DRPlayerLogic implements PlayerSet {
         player.changeGameMode(GameMode.ADVENTURE);
     }
 
-    public static void sortTeams(Random random, DRPlayerLogic waiting, DRPlayerLogic game) {
+    public static void sortTeams(Random random, DRPlayerLogic waiting, DRGame game) {
+        var gamePlayers = game.players;
         var waitingPlayers = waiting.getPlayers(random);
         int maxDeaths = Math.min(3, (int)Math.ceil(waitingPlayers.size() * 0.17));
         var runners = new ArrayList<DRWaiting.Player>();
@@ -130,10 +150,10 @@ public class DRPlayerLogic implements PlayerSet {
             }
         }
         for (DRWaiting.Player player : runners) {
-            game.add(new DRGame.Player(player.getPlayer(), game, DRTeam.RUNNERS));
+            gamePlayers.add(new DRGame.Player(player.getPlayer(), gamePlayers, DRTeam.RUNNERS, game));
         }
         for (DRWaiting.Player player : deaths) {
-            game.add(new DRGame.Player(player.getPlayer(), game, DRTeam.DEATHS));
+            gamePlayers.add(new DRGame.Player(player.getPlayer(), gamePlayers, DRTeam.DEATHS, game));
         }
     }
 

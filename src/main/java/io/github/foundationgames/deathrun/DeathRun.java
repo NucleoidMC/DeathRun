@@ -1,8 +1,6 @@
 package io.github.foundationgames.deathrun;
 
 import io.github.foundationgames.deathrun.game.DeathRunConfig;
-import io.github.foundationgames.deathrun.game.deathtrap.DeathTrap;
-import io.github.foundationgames.deathrun.game.deathtrap.DeathTraps;
 import io.github.foundationgames.deathrun.game.state.DRWaiting;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.util.Identifier;
@@ -27,6 +25,5 @@ public class DeathRun implements ModInitializer {
 
     @Override
     public void onInitialize() {
-
     }
 }

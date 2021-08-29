@@ -12,8 +12,18 @@
     "message.deathrun.requested_runner": "Requested to be a Runner.",
     "message.deathrun.requested_death": "Requested to be a Death.",
     "message.deathrun.cleared_requests": "Cleared your team requests.",
+    "message.deathrun.checkpoint": "Checkpoint Reached!",
+    "message.deathrun.finished": "You finished in ",
+    "message.deathrun.player_finished": "%s finished in ",
+    "message.deathrun.game_ended": "The game has ended!",
+
+    "insert.deathrun.xst_place": "%sst Place! ",
+    "insert.deathrun.xnd_place": "%snd Place! ",
+    "insert.deathrun.xrd_place": "%srd Place! ",
+    "insert.deathrun.time": "(%sm %ss)",
 
     "status.deathrun.in_progress": "Game is currently in progress!",
 
-    "title.deathrun.run": "RUN!"
+    "title.deathrun.run": "RUN!",
+    "title.deathrun.finish": "Finish!"
 }
