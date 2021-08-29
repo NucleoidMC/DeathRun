@@ -6,6 +6,7 @@ import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.DataResult;
 import io.github.foundationgames.deathrun.game.element.CheckpointZone;
 import io.github.foundationgames.deathrun.game.element.DeathTrapZone;
+import io.github.foundationgames.deathrun.game.element.EffectZone;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.LiteralText;
@@ -27,6 +28,7 @@ public class DeathRunMap {
     public final MapTemplate template;
     public final Map<BlockPos, DeathTrapZone> trapZones;
     public final List<CheckpointZone> checkpoints;
+    public final List<EffectZone> effectZones;
     public final BlockBounds spawn;
     public final BlockBounds runnerStart;
     public final BlockBounds deathStart;
@@ -34,10 +36,11 @@ public class DeathRunMap {
     public final BlockBounds finish;
     public final int time;
 
-    public DeathRunMap(MapTemplate template, Map<BlockPos, DeathTrapZone> deathTraps, List<CheckpointZone> checkpoints, BlockBounds spawn, BlockBounds runnerStart, BlockBounds deathStart, BlockBounds gate, BlockBounds finish, int time) {
+    public DeathRunMap(MapTemplate template, Map<BlockPos, DeathTrapZone> deathTraps, List<CheckpointZone> checkpoints, List<EffectZone> effectZones, BlockBounds spawn, BlockBounds runnerStart, BlockBounds deathStart, BlockBounds gate, BlockBounds finish, int time) {
         this.template = template;
         this.trapZones = deathTraps;
         this.checkpoints = checkpoints;
+        this.effectZones = effectZones;
         this.spawn = spawn;
         this.runnerStart = runnerStart;
         this.deathStart = deathStart;
@@ -68,6 +71,17 @@ public class DeathRunMap {
             });
         }
 
+        var effectZones = ImmutableList.<EffectZone>builder();
+
+        for (TemplateRegion reg : template.getMetadata().getRegions("effect_zone").collect(Collectors.toList())) {
+            DataResult<EffectZone.Effect> result = EffectZone.Effect.CODEC.decode(NbtOps.INSTANCE, reg.getData()).map(Pair::getFirst);
+
+            result.result().ifPresent(effect -> effectZones.add(new EffectZone(reg.getBounds(), effect)));
+            result.error().ifPresent(ex -> {
+                throw new GameOpenException(new LiteralText("Failed to decode effect zone data: " + ex));
+            });
+        }
+
         var checkpoints = ImmutableList.<CheckpointZone>builder();
         template.getMetadata().getRegions("checkpoint").forEach(reg -> {
             var bounds = reg.getBounds();
@@ -95,7 +109,7 @@ public class DeathRunMap {
             throw new GameOpenException(new LiteralText("Two death zones may not share the same button"));
         }
 
-        return new DeathRunMap(template, builtDeathTraps, checkpoints.build(), spawn, runnerStart, deathStart, gate, finish, cfg.time());
+        return new DeathRunMap(template, builtDeathTraps, checkpoints.build(), effectZones.build(), spawn, runnerStart, deathStart, gate, finish, cfg.time());
     }
 
     public ChunkGenerator createGenerator(MinecraftServer server) {

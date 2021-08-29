@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import io.github.foundationgames.deathrun.game.DeathRunConfig;
 import io.github.foundationgames.deathrun.game.element.CheckpointZone;
 import io.github.foundationgames.deathrun.game.element.DeathTrapZone;
+import io.github.foundationgames.deathrun.game.element.EffectZone;
 import io.github.foundationgames.deathrun.game.element.deathtrap.ResettingDeathTrap;
 import io.github.foundationgames.deathrun.game.map.DeathRunMap;
 import io.github.foundationgames.deathrun.game.state.logic.DRItemLogic;
@@ -23,6 +24,7 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.property.Properties;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
@@ -42,7 +44,7 @@ import xyz.nucleoid.stimuli.event.player.PlayerDamageEvent;
 import xyz.nucleoid.stimuli.event.player.PlayerDeathEvent;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -55,12 +57,11 @@ public class DRGame {
     public final DRPlayerLogic players;
     private final DRItemLogic items = new DRItemLogic();
     private final List<ResetCandidate> resets = new ArrayList<>();
-    private final Map<Player, Integer> finished = new HashMap<>();
+    private final Map<Player, Integer> finished = new LinkedHashMap<>();
 
     private static final int DEATH_TRAP_COOLDOWN = 10 * 20; // 10 seconds
     private static final int END_COUNTDOWN = 100 * 20; // 100 seconds
     private static final int FINISH_TIMER = 3 * 20; // 3 seconds
-    private static final LiteralText LINE = new LiteralText("----");
 
     private int startTimer = 10 * 20; // 10 seconds
 
@@ -202,7 +203,7 @@ public class DRGame {
             pl.playSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.MASTER, 0.85f, 0.59f);
             pl.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS, SoundCategory.MASTER, 0.85f, 0.95f);
             pl.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1, 1);
-            pl.playSound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.MASTER, 0.45f, 2);
+            pl.playSound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.MASTER, 0.3f, 2);
 
             this.endCountdown = END_COUNTDOWN;
         } else {
@@ -248,8 +249,41 @@ public class DRGame {
                 markFinished(player);
             }
         });
-        // TODO: report rankings
-        players.forEach(pl -> pl.sendMessage(new LiteralText("Game has ended, rankings WIP"), false));
+        broadcastRankings();
+    }
+
+    public void broadcastRankings() {
+        var header = new LiteralText("---- ").append(new TranslatableText("message.deathrun.game_ended").formatted(Formatting.RED).append(new LiteralText(" ----").formatted(Formatting.RESET)));
+        var pedestal = new ArrayList<Text>();
+        var places = new ArrayList<>(finished.keySet());
+        for (int i = 0; i <= 2; i++) {
+            int place = i + 1;
+            if (i < places.size()) {
+                pedestal.add(new LiteralText(Integer.toString(place))
+                        .styled(style -> style.withColor(getColorForPlace(place)).withBold(true))
+                        .append(new LiteralText(" - "+places.get(i).getPlayer().getEntityName()).formatted(Formatting.GRAY).styled(style -> style.withBold(false)))
+                );
+            }
+        }
+        players.getPlayers().forEach(player -> {
+            if (player instanceof Player gamePlayer) {
+                var pl = player.getPlayer();
+                pl.sendMessage(header, false);
+                for (var text : pedestal) {
+                    pl.sendMessage(text, false);
+                }
+                int idx = places.indexOf(gamePlayer);
+                if (idx >= 0) {
+                    int place = idx + 1;
+                    pl.sendMessage(new TranslatableText("message.deathrun.your_place", pl.getEntityName())
+                            .formatted(Formatting.BLUE)
+                            .append(new TranslatableText(getLocalizationForPlace(place), place)
+                                    .styled(style -> style.withColor(getColorForPlace(place)).withBold(true))), false);
+                } else {
+                    pl.sendMessage(new TranslatableText("message.deathrun.did_not_finish", pl.getEntityName()).formatted(Formatting.BLUE), false);
+                }
+            }
+        });
     }
 
     public void tick() {
@@ -377,6 +411,13 @@ public class DRGame {
                 }
                 if (!finished && game.map.finish.contains(pos)) {
                     game.finish(this);
+                }
+            }
+            // Applies to both deaths and runners, so you can have levitation
+            // or jump boost areas to help deaths get around
+            for (EffectZone zone : game.map.effectZones) {
+                if (zone.bounds().contains(pos.getX(), pos.getY(), pos.getZ())) {
+                    getPlayer().addStatusEffect(zone.effect().createEffect());
                 }
             }
         }
