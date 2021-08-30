@@ -343,7 +343,8 @@ public class DRGame {
             player -> {
                 var serverP = player.getPlayer();
                 var world = serverP.world;
-                return world.getFluidState(new BlockPos(serverP.getPos().add(0, 0.65, 0))).getFluid() == Fluids.WATER;
+                var fluid = world.getFluidState(new BlockPos(serverP.getPos().add(0, 0.65, 0))).getFluid();
+                return fluid == Fluids.WATER || fluid == Fluids.FLOWING_WATER;
             },
             // Lightning death
             player -> {
