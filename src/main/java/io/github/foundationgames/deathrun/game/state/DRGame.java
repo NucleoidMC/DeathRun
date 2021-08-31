@@ -9,13 +9,17 @@ import io.github.foundationgames.deathrun.game.element.deathtrap.ResettingDeathT
 import io.github.foundationgames.deathrun.game.map.DeathRunMap;
 import io.github.foundationgames.deathrun.game.state.logic.DRItemLogic;
 import io.github.foundationgames.deathrun.game.state.logic.DRPlayerLogic;
+import io.github.foundationgames.deathrun.game.state.logic.entity.DREntityLogic;
+import io.github.foundationgames.deathrun.game.state.logic.entity.EntityBehavior;
 import io.github.foundationgames.deathrun.util.DRUtil;
 import net.minecraft.block.AbstractButtonBlock;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.entity.LightningEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ParticleS2CPacket;
@@ -57,6 +61,7 @@ public class DRGame {
     public final DeathRunMap map;
     public final DeathRunConfig config;
     public final DRPlayerLogic players;
+    private final DREntityLogic entities;
     private final DRItemLogic items = new DRItemLogic();
     private final List<ResetCandidate> resets = new ArrayList<>();
     private final Map<Player, Integer> finished = new LinkedHashMap<>();
@@ -77,6 +82,7 @@ public class DRGame {
         this.map = waiting.map;
         this.config = waiting.config;
         this.players = new DRPlayerLogic(this.world, game, map, config);
+        this.entities = new DREntityLogic(world, this);
 
         game.listen(ItemUseEvent.EVENT, items::processUse);
     }
@@ -114,6 +120,7 @@ public class DRGame {
             game.listen(GameActivityEvents.TICK, deathRun::tick);
             game.listen(BlockUseEvent.EVENT, deathRun::useBlock);
             game.listen(GameActivityEvents.TICK, deathRun.players::tick);
+            game.listen(GameActivityEvents.TICK, deathRun.entities::tick);
         });
     }
 
@@ -138,7 +145,7 @@ public class DRGame {
 
     public void trigger(DeathTrapZone trapZone) {
         var deathTrap = trapZone.getTrap();
-        deathTrap.trigger(world, trapZone.getZone());
+        deathTrap.trigger(this, world, trapZone.getZone());
         if (deathTrap instanceof ResettingDeathTrap resettable) {
             scheduleReset(resettable, trapZone);
         }
@@ -151,7 +158,12 @@ public class DRGame {
     }
 
     public void scheduleReset(ResettingDeathTrap deathTrap, DeathTrapZone zone) {
-        this.resets.add(new ResetCandidate(world, deathTrap, zone));
+        this.resets.add(new ResetCandidate(this, world, deathTrap, zone));
+    }
+
+    public <E extends Entity> void spawn(E entity, EntityBehavior<E> behavior) {
+        world.spawnEntity(entity);
+        entities.attach(entity, behavior);
     }
 
     public int getColorForPlace(int place) {
@@ -352,6 +364,12 @@ public class DRGame {
                 var world = serverP.world;
                 return world.getEntitiesByClass(LightningEntity.class, serverP.getBoundingBox().expand(1.5, 1.5, 1.5), e -> true).size() > 0;
             },
+            // Arrow death
+            player -> {
+                var serverP = player.getPlayer();
+                var world = serverP.world;
+                return world.getEntitiesByClass(ArrowEntity.class, serverP.getBoundingBox().expand(0.08, 0.08, 0.08), e -> true).size() > 0;
+            },
             // Falling hazard death
             player -> {
                 var serverP = player.getPlayer();
@@ -438,13 +456,15 @@ public class DRGame {
     }
 
     public static class ResetCandidate {
+        private final DRGame game;
         private final ServerWorld world;
         private final ResettingDeathTrap deathTrap;
         private final DeathTrapZone zone;
         private int time = DEATH_TRAP_COOLDOWN - 35;
         public boolean removed = false;
 
-        public ResetCandidate(ServerWorld world, ResettingDeathTrap deathTrap, DeathTrapZone zone) {
+        public ResetCandidate(DRGame game, ServerWorld world, ResettingDeathTrap deathTrap, DeathTrapZone zone) {
+            this.game = game;
             this.world = world;
             this.deathTrap = deathTrap;
             this.zone = zone;
@@ -453,7 +473,7 @@ public class DRGame {
         public void tick() {
             this.time--;
             if (this.time <= 0) {
-                deathTrap.reset(world, zone.getZone());
+                deathTrap.reset(game, world, zone.getZone());
                 removed = true;
             }
         }

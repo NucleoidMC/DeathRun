@@ -19,6 +19,7 @@ public class DeathTraps {
     public static final Identifier POWDERED_SNOW = register("powdered_snow", PowderedSnowDeathTrap.CODEC);
     public static final Identifier INVISIBLE_PATH = register("invisible_path", InvisiblePathDeathTrap.CODEC);
     public static final Identifier BLOCK_REPLACE = register("block_replace", BlockReplaceDeathTrap.CODEC);
+    public static final Identifier DISPENSER_ARROW = register("dispenser_arrow", DispenserArrowDeathTrap.CODEC);
 
     public static Identifier getId(DeathTrap piece) {
         return REGISTRY.getIdentifier(piece.getCodec());

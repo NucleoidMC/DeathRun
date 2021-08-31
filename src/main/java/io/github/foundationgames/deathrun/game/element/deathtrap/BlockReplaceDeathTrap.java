@@ -3,6 +3,7 @@ package io.github.foundationgames.deathrun.game.element.deathtrap;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.foundationgames.deathrun.game.element.DeathTrap;
+import io.github.foundationgames.deathrun.game.state.DRGame;
 import net.minecraft.block.BlockState;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -25,7 +26,7 @@ public class BlockReplaceDeathTrap extends ResettingDeathTrap {
     }
 
     @Override
-    public void trigger(ServerWorld world, BlockBounds zone) {
+    public void trigger(DRGame game, ServerWorld world, BlockBounds zone) {
         for (BlockPos pos : zone) {
             var state = world.getBlockState(pos);
             if (state == first) {
@@ -35,7 +36,7 @@ public class BlockReplaceDeathTrap extends ResettingDeathTrap {
     }
 
     @Override
-    public void reset(ServerWorld world, BlockBounds zone) {
+    public void reset(DRGame game, ServerWorld world, BlockBounds zone) {
         for (BlockPos pos : zone) {
             var state = world.getBlockState(pos);
             if (state == second) {

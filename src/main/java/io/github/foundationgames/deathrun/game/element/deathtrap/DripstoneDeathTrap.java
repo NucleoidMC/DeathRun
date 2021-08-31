@@ -3,6 +3,7 @@ package io.github.foundationgames.deathrun.game.element.deathtrap;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.foundationgames.deathrun.game.element.DeathTrap;
+import io.github.foundationgames.deathrun.game.state.DRGame;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.enums.Thickness;
@@ -34,7 +35,7 @@ public class DripstoneDeathTrap extends DeathTrap {
     }
 
     @Override
-    public void trigger(ServerWorld world, BlockBounds zone) {
+    public void trigger(DRGame game, ServerWorld world, BlockBounds zone) {
         for (BlockPos pos : zone) {
             var state = world.getBlockState(pos);
             if (state.isOf(Blocks.DRIPSTONE_BLOCK)) {

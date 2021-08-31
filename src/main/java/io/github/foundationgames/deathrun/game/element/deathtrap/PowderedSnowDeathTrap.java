@@ -2,6 +2,7 @@ package io.github.foundationgames.deathrun.game.element.deathtrap;
 
 import com.mojang.serialization.Codec;
 import io.github.foundationgames.deathrun.game.element.DeathTrap;
+import io.github.foundationgames.deathrun.game.state.DRGame;
 import net.minecraft.block.Blocks;
 import net.minecraft.network.packet.s2c.play.ParticleS2CPacket;
 import net.minecraft.particle.ParticleTypes;
@@ -15,7 +16,7 @@ public class PowderedSnowDeathTrap extends ResettingDeathTrap {
     public static final Codec<PowderedSnowDeathTrap> CODEC = Codec.unit(PowderedSnowDeathTrap::new);
 
     @Override
-    public void trigger(ServerWorld world, BlockBounds zone) {
+    public void trigger(DRGame game, ServerWorld world, BlockBounds zone) {
         for (BlockPos pos : zone) {
             var state = world.getBlockState(pos);
             if (state.isOf(Blocks.SNOW_BLOCK)) {
@@ -28,7 +29,7 @@ public class PowderedSnowDeathTrap extends ResettingDeathTrap {
     }
 
     @Override
-    public void reset(ServerWorld world, BlockBounds zone) {
+    public void reset(DRGame game, ServerWorld world, BlockBounds zone) {
         for (BlockPos pos : zone) {
             var state = world.getBlockState(pos);
             if (state.isOf(Blocks.POWDER_SNOW)) {
