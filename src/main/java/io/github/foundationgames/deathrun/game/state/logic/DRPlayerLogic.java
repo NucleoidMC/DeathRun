@@ -126,10 +126,18 @@ public class DRPlayerLogic implements PlayerSet {
     public static void sortTeams(Random random, DRPlayerLogic waiting, DRGame game) {
         var gamePlayers = game.players;
         var waitingPlayers = waiting.getPlayers(random);
+        // Runners only team sorting (put everyone on runners team)
+        if (game.config.runnersOnly()) {
+            for (var player : waitingPlayers) {
+                gamePlayers.add(new DRGame.Player(player.getPlayer(), gamePlayers, DRTeam.RUNNERS, game));
+            }
+            return;
+        }
+        // Normal team sorting (distribute runners and deaths evenly, based on requests as well)
         int maxDeaths = Math.min(3, (int)Math.ceil(waitingPlayers.size() * 0.17));
         var runners = new ArrayList<DRWaiting.Player>();
         var deaths = new ArrayList<DRWaiting.Player>();
-        for (DRPlayer p : waitingPlayers) {
+        for (var p : waitingPlayers) {
             if (p instanceof DRWaiting.Player player) {
                 if (player.requestedTeam == DRTeam.DEATHS && deaths.size() < maxDeaths) {
                     deaths.add(player);
@@ -138,7 +146,7 @@ public class DRPlayerLogic implements PlayerSet {
                 }
             }
         }
-        for (DRPlayer p : waitingPlayers) {
+        for (var p : waitingPlayers) {
             if (p instanceof DRWaiting.Player player &&
                     (!deaths.contains(player) && !runners.contains(player))
             ) {
@@ -149,10 +157,10 @@ public class DRPlayerLogic implements PlayerSet {
                 }
             }
         }
-        for (DRWaiting.Player player : runners) {
+        for (var player : runners) {
             gamePlayers.add(new DRGame.Player(player.getPlayer(), gamePlayers, DRTeam.RUNNERS, game));
         }
-        for (DRWaiting.Player player : deaths) {
+        for (var player : deaths) {
             gamePlayers.add(new DRGame.Player(player.getPlayer(), gamePlayers, DRTeam.DEATHS, game));
         }
     }

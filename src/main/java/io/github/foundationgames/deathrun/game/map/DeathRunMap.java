@@ -4,13 +4,17 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.DataResult;
+import eu.pb4.holograms.api.Holograms;
 import io.github.foundationgames.deathrun.game.element.CheckpointZone;
 import io.github.foundationgames.deathrun.game.element.DeathTrapZone;
 import io.github.foundationgames.deathrun.game.element.EffectZone;
+import io.github.foundationgames.deathrun.game.element.MapText;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 import xyz.nucleoid.map_templates.BlockBounds;
 import xyz.nucleoid.map_templates.MapTemplate;
@@ -29,6 +33,7 @@ public class DeathRunMap {
     public final Map<BlockPos, DeathTrapZone> trapZones;
     public final List<CheckpointZone> checkpoints;
     public final List<EffectZone> effectZones;
+    public final List<MapText> mapTexts;
     public final BlockBounds spawn;
     public final BlockBounds runnerStart;
     public final BlockBounds deathStart;
@@ -36,11 +41,12 @@ public class DeathRunMap {
     public final BlockBounds finish;
     public final int time;
 
-    public DeathRunMap(MapTemplate template, Map<BlockPos, DeathTrapZone> deathTraps, List<CheckpointZone> checkpoints, List<EffectZone> effectZones, BlockBounds spawn, BlockBounds runnerStart, BlockBounds deathStart, BlockBounds gate, BlockBounds finish, int time) {
+    public DeathRunMap(MapTemplate template, Map<BlockPos, DeathTrapZone> deathTraps, List<CheckpointZone> checkpoints, List<EffectZone> effectZones, List<MapText> mapTexts, BlockBounds spawn, BlockBounds runnerStart, BlockBounds deathStart, BlockBounds gate, BlockBounds finish, int time) {
         this.template = template;
         this.trapZones = deathTraps;
         this.checkpoints = checkpoints;
         this.effectZones = effectZones;
+        this.mapTexts = mapTexts;
         this.spawn = spawn;
         this.runnerStart = runnerStart;
         this.deathStart = deathStart;
@@ -58,7 +64,6 @@ public class DeathRunMap {
         }
 
         var deathTraps = ImmutableMap.<BlockPos, DeathTrapZone>builder();
-
         for (TemplateRegion reg : template.getMetadata().getRegions("death_trap").collect(Collectors.toList())) {
             DataResult<DeathTrapZone> result = DeathTrapZone.CODEC.decode(NbtOps.INSTANCE, reg.getData()).map(Pair::getFirst);
 
@@ -72,13 +77,22 @@ public class DeathRunMap {
         }
 
         var effectZones = ImmutableList.<EffectZone>builder();
-
         for (TemplateRegion reg : template.getMetadata().getRegions("effect_zone").collect(Collectors.toList())) {
             DataResult<EffectZone.Effect> result = EffectZone.Effect.CODEC.decode(NbtOps.INSTANCE, reg.getData()).map(Pair::getFirst);
 
             result.result().ifPresent(effect -> effectZones.add(new EffectZone(reg.getBounds(), effect)));
             result.error().ifPresent(ex -> {
                 throw new GameOpenException(new LiteralText("Failed to decode effect zone data: " + ex));
+            });
+        }
+
+        var mapTexts = ImmutableList.<MapText>builder();
+        for (TemplateRegion reg : template.getMetadata().getRegions("text").collect(Collectors.toList())) {
+            DataResult<MapText.TextData> result = MapText.TextData.CODEC.decode(NbtOps.INSTANCE, reg.getData()).map(Pair::getFirst);
+
+            result.result().ifPresent(textData -> mapTexts.add(new MapText(reg.getBounds().center(), textData)));
+            result.error().ifPresent(ex -> {
+                throw new GameOpenException(new LiteralText("Failed to decode 'text' region data: " + ex));
             });
         }
 
@@ -109,10 +123,21 @@ public class DeathRunMap {
             throw new GameOpenException(new LiteralText("Two death zones may not share the same button"));
         }
 
-        return new DeathRunMap(template, builtDeathTraps, checkpoints.build(), effectZones.build(), spawn, runnerStart, deathStart, gate, finish, cfg.time());
+        return new DeathRunMap(template, builtDeathTraps, checkpoints.build(), effectZones.build(), mapTexts.build(), spawn, runnerStart, deathStart, gate, finish, cfg.time());
     }
 
     public ChunkGenerator createGenerator(MinecraftServer server) {
         return new TemplateChunkGenerator(server, template);
+    }
+
+    public void applyFeatures(ServerWorld world) {
+        for (var mapText : mapTexts) {
+            var lines = mapText.text().lines();
+            Vec3d pos = mapText.pos().add(0, (lines.size() * 0.35) * 0.5, 0);
+            for (var text : lines) {
+                Holograms.create(world, pos, text).show();
+                pos = pos.add(0, -0.35, 0);
+            }
+        }
     }
 }

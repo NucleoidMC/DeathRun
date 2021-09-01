@@ -55,6 +55,8 @@ public class DRWaiting {
 
             GameWaitingLobby.addTo(game, cfg.players());
 
+            map.applyFeatures(world);
+
             DRUtil.setBaseGameRules(game);
 
             waiting.items.addBehavior("leave_game", (player, stack, hand) -> {

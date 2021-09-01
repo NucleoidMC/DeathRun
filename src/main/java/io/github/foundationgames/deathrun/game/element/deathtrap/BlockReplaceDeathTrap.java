@@ -13,23 +13,26 @@ public class BlockReplaceDeathTrap extends ResettingDeathTrap {
     public static final Codec<BlockReplaceDeathTrap> CODEC = RecordCodecBuilder.create(instance ->
             instance.group(
                     BlockState.CODEC.fieldOf("first").forGetter(trap -> trap.first),
-                    BlockState.CODEC.fieldOf("second").forGetter(trap -> trap.second)
+                    BlockState.CODEC.fieldOf("second").forGetter(trap -> trap.second),
+                    Codec.BOOL.optionalFieldOf("filter_by_state", true).forGetter(trap -> trap.filterByState)
             ).apply(instance, BlockReplaceDeathTrap::new)
     );
 
     private final BlockState first;
     private final BlockState second;
+    private final boolean filterByState;
 
-    public BlockReplaceDeathTrap(BlockState first, BlockState second) {
+    public BlockReplaceDeathTrap(BlockState first, BlockState second, boolean filterByState) {
         this.first = first;
         this.second = second;
+        this.filterByState = filterByState;
     }
 
     @Override
     public void trigger(DRGame game, ServerWorld world, BlockBounds zone) {
         for (BlockPos pos : zone) {
             var state = world.getBlockState(pos);
-            if (state == first) {
+            if (filterByState ? state == first : state.isOf(first.getBlock())) {
                 world.setBlockState(pos, second);
             }
         }
@@ -39,7 +42,7 @@ public class BlockReplaceDeathTrap extends ResettingDeathTrap {
     public void reset(DRGame game, ServerWorld world, BlockBounds zone) {
         for (BlockPos pos : zone) {
             var state = world.getBlockState(pos);
-            if (state == second) {
+            if (filterByState ? state == second : state.isOf(second.getBlock())) {
                 world.setBlockState(pos, first);
             }
         }
