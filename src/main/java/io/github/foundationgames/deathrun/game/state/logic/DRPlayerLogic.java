@@ -118,6 +118,13 @@ public class DRPlayerLogic implements PlayerSet {
                 DRItemLogic.apply("boost", boostItem);
 
                 player.getInventory().setStack(0, boostItem);
+
+                if (gamePlayer.game.config.runnersOnly()) {
+                    var activatorItem = ItemStackBuilder.of(Items.TRIDENT)
+                            .setName(new TranslatableText("item.deathrun.activator_trident").styled(style -> style.withColor(0xffe747).withItalic(false))).build();
+                    DRItemLogic.apply("activator", activatorItem);
+                    player.getInventory().setStack(1, activatorItem);
+                }
             }
         }
         player.changeGameMode(GameMode.ADVENTURE);

@@ -9,6 +9,7 @@ import io.github.foundationgames.deathrun.game.element.deathtrap.ResettingDeathT
 import io.github.foundationgames.deathrun.game.map.DeathRunMap;
 import io.github.foundationgames.deathrun.game.state.logic.DRItemLogic;
 import io.github.foundationgames.deathrun.game.state.logic.DRPlayerLogic;
+import io.github.foundationgames.deathrun.game.state.logic.entity.ActivatorTridentEntityBehavior;
 import io.github.foundationgames.deathrun.game.state.logic.entity.DREntityLogic;
 import io.github.foundationgames.deathrun.game.state.logic.entity.EntityBehavior;
 import io.github.foundationgames.deathrun.util.DRUtil;
@@ -20,6 +21,7 @@ import net.minecraft.entity.LightningEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.projectile.ArrowEntity;
+import net.minecraft.entity.projectile.TridentEntity;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ParticleS2CPacket;
@@ -107,6 +109,19 @@ public class DRGame {
                     return TypedActionResult.success(stack);
                 }
                 return TypedActionResult.pass(stack);
+            });
+
+            deathRun.items.addBehavior("activator", (player, stack, hand) -> {
+                if (deathRun.players.get(player) instanceof Player gamePl && gamePl.started && !gamePl.finished && !player.getItemCooldownManager().isCoolingDown(stack.getItem())) {
+                    var world = deathRun.world;
+                    var trident = new TridentEntity(world, player, stack);
+                    trident.setProperties(player, player.getPitch(), player.getYaw(), 0, 3, 1);
+                    deathRun.spawn(trident, new ActivatorTridentEntityBehavior());
+                    world.playSoundFromEntity(null, trident, SoundEvents.ITEM_TRIDENT_THROW, SoundCategory.PLAYERS, 1, 1);
+                    player.getItemCooldownManager().set(stack.getItem(), 200);
+                    return TypedActionResult.success(stack);
+                }
+                return TypedActionResult.fail(stack);
             });
 
             game.listen(GamePlayerEvents.OFFER, offer -> offer.reject(new TranslatableText("status.deathrun.in_progress")));

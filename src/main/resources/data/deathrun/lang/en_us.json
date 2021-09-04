@@ -7,6 +7,7 @@
     "item.deathrun.request_clear": "Clear Requests",
     "item.deathrun.runners_only": "Runners Only!",
     "item.deathrun.boost_feather": "Boost Feather",
+    "item.deathrun.activator_trident": "Remote Death Trap Activator",
 
     "message.deathrun.left_game": "Left game of DeathRun!",
     "message.deathrun.requested_runner": "Requested to be a Runner.",

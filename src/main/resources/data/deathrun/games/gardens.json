@@ -2,7 +2,7 @@
     "type": "deathrun:deathrun",
     "runners_only": false,
     "map": {
-        "time": 0,
+        "time": 23900,
         "map_id": "deathrun:gardens"
     },
     "players": {

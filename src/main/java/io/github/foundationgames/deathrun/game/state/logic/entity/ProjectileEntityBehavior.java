@@ -11,8 +11,12 @@ public abstract class ProjectileEntityBehavior<P extends ProjectileEntity> exten
     @Override
     public void tick(P entity, DRGame game) {
         if (entity instanceof PersistentProjectileEntity proj && ((PersistentProjectileEntityAccess)proj).deathrun$inGround()) {
-            entity.remove(Entity.RemovalReason.DISCARDED);
+            onHitBlock(entity, game);
         }
+    }
+
+    public void onHitBlock(P entity, DRGame game) {
+        entity.remove(Entity.RemovalReason.DISCARDED);
     }
 
     public static class Arrow extends ProjectileEntityBehavior<ArrowEntity> {
