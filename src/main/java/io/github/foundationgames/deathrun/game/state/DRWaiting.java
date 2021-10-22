@@ -61,7 +61,7 @@ public class DRWaiting {
 
             waiting.items.addBehavior("leave_game", (player, stack, hand) -> {
                 player.sendMessage(new TranslatableText("message.deathrun.left_game").formatted(Formatting.RED), false);
-                game.getGameSpace().kickPlayer(player);
+                game.getGameSpace().getPlayers().kick(player);
                 return TypedActionResult.success(stack);
             });
 

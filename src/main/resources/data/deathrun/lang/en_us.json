@@ -1,5 +1,5 @@
 {
-    "game.deathrun.deathrun": "DeathRun",
+    "gameType.deathrun.deathrun": "DeathRun",
 
     "item.deathrun.leave_game": "Leave Game",
     "item.deathrun.request_runner": "Request Runner",
