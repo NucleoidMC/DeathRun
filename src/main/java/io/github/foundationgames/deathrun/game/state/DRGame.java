@@ -115,7 +115,7 @@ public class DRGame {
                 if (deathRun.players.get(player) instanceof Player gamePl && gamePl.started && !gamePl.finished && !player.getItemCooldownManager().isCoolingDown(stack.getItem())) {
                     var world = deathRun.world;
                     var trident = new TridentEntity(world, player, stack);
-                    trident.setProperties(player, player.getPitch(), player.getYaw(), 0, 3, 1);
+                    trident.setVelocity(player, player.getPitch(), player.getYaw(), 0, 3, 1);
                     deathRun.spawn(trident, new ActivatorTridentEntityBehavior());
                     world.playSoundFromEntity(null, trident, SoundEvents.ITEM_TRIDENT_THROW, SoundCategory.PLAYERS, 1, 1);
                     player.getItemCooldownManager().set(stack.getItem(), 200);
@@ -148,7 +148,7 @@ public class DRGame {
                     var trapZone = map.trapZones.get(pos);
                     if (trapZone != null) {
                         world.setBlockState(pos, state.with(Properties.POWERED, true));
-                        world.getBlockTickScheduler().schedule(pos, button, DEATH_TRAP_COOLDOWN);
+                        world.createAndScheduleBlockTick(pos, button, DEATH_TRAP_COOLDOWN);
                         trigger(trapZone);
                         return ActionResult.SUCCESS;
                     }
