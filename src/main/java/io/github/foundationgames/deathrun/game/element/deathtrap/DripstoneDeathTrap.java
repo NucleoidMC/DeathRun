@@ -4,10 +4,10 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.foundationgames.deathrun.game.element.DeathTrap;
 import io.github.foundationgames.deathrun.game.state.DRGame;
+import io.github.foundationgames.deathrun.mixin.FallingBlockEntityAccess;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.enums.Thickness;
-import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
@@ -43,7 +43,7 @@ public class DripstoneDeathTrap extends DeathTrap {
                 float off = world.random.nextFloat();
                 for (int i = 0; i < length; i++) {
                     var dState = dripstoneStates[Math.min(i, dripstoneStates.length - 1)];
-                    var dripstone = new FallingBlockEntity(world, dripstonePos.x, dripstonePos.y + i - off, dripstonePos.z, dState);
+                    var dripstone = FallingBlockEntityAccess.deathrun$construct(world, dripstonePos.x, dripstonePos.y + i - off, dripstonePos.z, dState);
                     dripstone.timeFalling = 1;
                     dripstone.dropItem = false;
                     world.spawnEntity(dripstone);

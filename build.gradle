@@ -29,7 +29,7 @@ dependencies {
     // Plasmid
     modImplementation "xyz.nucleoid:plasmid:${project.plasmid_version}"
 
-    modRuntimeOnly("supercoder79:databreaker:0.2.8") {
+    modRuntimeOnly("supercoder79:databreaker:0.2.9") {
         exclude module: "fabric-loader"
     }
 }
