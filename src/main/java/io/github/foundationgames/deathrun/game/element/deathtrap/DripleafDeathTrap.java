@@ -21,7 +21,7 @@ public class DripleafDeathTrap extends DeathTrap {
             var state = world.getBlockState(pos);
             if (state.isOf(Blocks.BIG_DRIPLEAF)) {
                 world.setBlockState(pos, state.with(Properties.TILT, Tilt.FULL));
-                world.createAndScheduleBlockTick(pos, state.getBlock(), 69);
+                world.scheduleBlockTick(pos, state.getBlock(), 69);
             }
         }
         var center = zone.center();

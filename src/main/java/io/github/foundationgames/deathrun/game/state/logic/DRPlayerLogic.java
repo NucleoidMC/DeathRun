@@ -7,10 +7,13 @@ import io.github.foundationgames.deathrun.game.state.DRPlayer;
 import io.github.foundationgames.deathrun.game.state.DRTeam;
 import io.github.foundationgames.deathrun.game.state.DRWaiting;
 import io.github.foundationgames.deathrun.util.DRUtil;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.text.Text;
+import net.minecraft.util.Util;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.GameMode;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.plasmid.game.GameActivity;
@@ -40,8 +43,8 @@ public class DRPlayerLogic implements PlayerSet {
     }
 
     public List<DRPlayer> getPlayers(Random random) {
-        var list = new ArrayList<>(getPlayers());
-        Collections.shuffle(list, random);
+        var list = new ObjectArrayList<>(getPlayers());
+        Util.shuffle(list, random);
         return list;
     }
 
@@ -54,20 +57,20 @@ public class DRPlayerLogic implements PlayerSet {
         player.teleport(world, x, min.getY(), z, 0f, 0f);
 
         var leaveItem = ItemStackBuilder.of(Items.MAGENTA_GLAZED_TERRACOTTA)
-                .setName(new TranslatableText("item.deathrun.leave_game").styled(style -> style.withColor(0x896bff).withItalic(false))).build();
+                .setName(Text.translatable("item.deathrun.leave_game").styled(style -> style.withColor(0x896bff).withItalic(false))).build();
         DRItemLogic.apply("leave_game", leaveItem);
 
         if (!config.runnersOnly()) {
             var runnerItem = ItemStackBuilder.of(DRUtil.createRunnerHead())
-                    .setName(new TranslatableText("item.deathrun.request_runner").styled(style -> style.withColor(0x6bffc1).withItalic(false))).build();
+                    .setName(Text.translatable("item.deathrun.request_runner").styled(style -> style.withColor(0x6bffc1).withItalic(false))).build();
             DRItemLogic.apply("request_runner", runnerItem);
 
             var deathItem = ItemStackBuilder.of(DRUtil.createDeathHead())
-                    .setName(new TranslatableText("item.deathrun.request_death").styled(style -> style.withColor(0x6bffc1).withItalic(false))).build();
+                    .setName(Text.translatable("item.deathrun.request_death").styled(style -> style.withColor(0x6bffc1).withItalic(false))).build();
             DRItemLogic.apply("request_death", deathItem);
 
             var clearItem = ItemStackBuilder.of(DRUtil.createClearHead())
-                    .setName(new TranslatableText("item.deathrun.request_clear").styled(style -> style.withColor(0xff6e42).withItalic(false))).build();
+                    .setName(Text.translatable("item.deathrun.request_clear").styled(style -> style.withColor(0xff6e42).withItalic(false))).build();
             DRItemLogic.apply("request_clear", clearItem);
 
             player.getInventory().setStack(3, runnerItem);
@@ -75,7 +78,7 @@ public class DRPlayerLogic implements PlayerSet {
             player.getInventory().setStack(5, deathItem);
         } else {
             var runnerItem = ItemStackBuilder.of(DRUtil.createRunnerHeadB())
-                    .setName(new TranslatableText("item.deathrun.runners_only").styled(style -> style.withColor(0xffca38).withItalic(false))).build();
+                    .setName(Text.translatable("item.deathrun.runners_only").styled(style -> style.withColor(0xffca38).withItalic(false))).build();
             player.getInventory().setStack(4, runnerItem);
         }
         player.getInventory().setStack(8, leaveItem);
@@ -114,14 +117,14 @@ public class DRPlayerLogic implements PlayerSet {
             pl.getPlayer().getInventory().clear();
             if (gamePlayer.team == DRTeam.RUNNERS && !gamePlayer.isFinished()) {
                 var boostItem = ItemStackBuilder.of(Items.FEATHER)
-                        .setName(new TranslatableText("item.deathrun.boost_feather").styled(style -> style.withColor(0x9ce3ff).withItalic(false))).build();
+                        .setName(Text.translatable("item.deathrun.boost_feather").styled(style -> style.withColor(0x9ce3ff).withItalic(false))).build();
                 DRItemLogic.apply("boost", boostItem);
 
                 player.getInventory().setStack(0, boostItem);
 
                 if (gamePlayer.game.config.runnersOnly()) {
                     var activatorItem = ItemStackBuilder.of(Items.TRIDENT)
-                            .setName(new TranslatableText("item.deathrun.activator_trident").styled(style -> style.withColor(0xffe747).withItalic(false))).build();
+                            .setName(Text.translatable("item.deathrun.activator_trident").styled(style -> style.withColor(0xffe747).withItalic(false))).build();
                     DRItemLogic.apply("activator", activatorItem);
                     player.getInventory().setStack(1, activatorItem);
                 }

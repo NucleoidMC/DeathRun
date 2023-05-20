@@ -7,7 +7,7 @@ import io.github.foundationgames.deathrun.game.state.logic.DRPlayerLogic;
 import io.github.foundationgames.deathrun.util.DRUtil;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.TypedActionResult;
@@ -60,25 +60,25 @@ public class DRWaiting {
             DRUtil.setBaseGameRules(game);
 
             waiting.items.addBehavior("leave_game", (player, stack, hand) -> {
-                player.sendMessage(new TranslatableText("message.deathrun.left_game").formatted(Formatting.RED), false);
+                player.sendMessage(Text.translatable("message.deathrun.left_game").formatted(Formatting.RED), false);
                 game.getGameSpace().getPlayers().kick(player);
                 return TypedActionResult.success(stack);
             });
 
             waiting.items.addBehavior("request_runner", (player, stack, hand) -> {
-                player.sendMessage(new TranslatableText("message.deathrun.requested_runner").formatted(Formatting.GOLD), false);
+                player.sendMessage(Text.translatable("message.deathrun.requested_runner").formatted(Formatting.GOLD), false);
                 if (waiting.players.get(player) instanceof DRWaiting.Player wp) wp.requestedTeam = DRTeam.RUNNERS;
                 return TypedActionResult.success(stack);
             });
 
             waiting.items.addBehavior("request_death", (player, stack, hand) -> {
-                player.sendMessage(new TranslatableText("message.deathrun.requested_death").formatted(Formatting.GOLD), false);
+                player.sendMessage(Text.translatable("message.deathrun.requested_death").formatted(Formatting.GOLD), false);
                 if (waiting.players.get(player) instanceof DRWaiting.Player wp) wp.requestedTeam = DRTeam.DEATHS;
                 return TypedActionResult.success(stack);
             });
 
             waiting.items.addBehavior("request_clear", (player, stack, hand) -> {
-                player.sendMessage(new TranslatableText("message.deathrun.cleared_requests").formatted(Formatting.GREEN), false);
+                player.sendMessage(Text.translatable("message.deathrun.cleared_requests").formatted(Formatting.GREEN), false);
                 if (waiting.players.get(player) instanceof DRWaiting.Player wp) wp.requestedTeam = null;
                 return TypedActionResult.success(stack);
             });

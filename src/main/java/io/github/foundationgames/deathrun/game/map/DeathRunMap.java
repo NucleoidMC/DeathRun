@@ -12,7 +12,7 @@ import io.github.foundationgames.deathrun.game.element.MapText;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
@@ -60,7 +60,7 @@ public class DeathRunMap {
         try {
             template = MapTemplateSerializer.loadFromResource(server, cfg.mapId());
         } catch (IOException e) {
-            throw new GameOpenException(new LiteralText(String.format("Map %s was not found", cfg.mapId())));
+            throw new GameOpenException(Text.literal(String.format("Map %s was not found", cfg.mapId())));
         }
 
         var deathTraps = ImmutableMap.<BlockPos, DeathTrapZone>builder();
@@ -72,7 +72,7 @@ public class DeathRunMap {
                 deathTraps.put(deathTrapZone.getButton(), deathTrapZone);
             });
             result.error().ifPresent(ex -> {
-                throw new GameOpenException(new LiteralText("Failed to decode death trap zone: " + ex));
+                throw new GameOpenException(Text.literal("Failed to decode death trap zone: " + ex));
             });
         }
 
@@ -82,7 +82,7 @@ public class DeathRunMap {
 
             result.result().ifPresent(effect -> effectZones.add(new EffectZone(reg.getBounds(), effect)));
             result.error().ifPresent(ex -> {
-                throw new GameOpenException(new LiteralText("Failed to decode effect zone data: " + ex));
+                throw new GameOpenException(Text.literal("Failed to decode effect zone data: " + ex));
             });
         }
 
@@ -92,7 +92,7 @@ public class DeathRunMap {
 
             result.result().ifPresent(textData -> mapTexts.add(new MapText(reg.getBounds().center(), textData)));
             result.error().ifPresent(ex -> {
-                throw new GameOpenException(new LiteralText("Failed to decode 'text' region data: " + ex));
+                throw new GameOpenException(Text.literal("Failed to decode 'text' region data: " + ex));
             });
         }
 
@@ -110,17 +110,17 @@ public class DeathRunMap {
         var gate = template.getMetadata().getFirstRegionBounds("gate");
         var finish = template.getMetadata().getFirstRegionBounds("finish");
 
-        if (spawn == null) throw new GameOpenException(new LiteralText("Missing spawn region!"));
-        if (runnerStart == null) throw new GameOpenException(new LiteralText("Missing runner_start region!"));
-        if (deathStart == null) throw new GameOpenException(new LiteralText("Missing death_start region!"));
-        if (gate == null) throw new GameOpenException(new LiteralText("Missing gate region!"));
-        if (finish == null) throw new GameOpenException(new LiteralText("Missing finish region!"));
+        if (spawn == null) throw new GameOpenException(Text.literal("Missing spawn region!"));
+        if (runnerStart == null) throw new GameOpenException(Text.literal("Missing runner_start region!"));
+        if (deathStart == null) throw new GameOpenException(Text.literal("Missing death_start region!"));
+        if (gate == null) throw new GameOpenException(Text.literal("Missing gate region!"));
+        if (finish == null) throw new GameOpenException(Text.literal("Missing finish region!"));
 
         Map<BlockPos, DeathTrapZone> builtDeathTraps;
         try {
             builtDeathTraps = deathTraps.build();
         } catch (IllegalArgumentException ex) {
-            throw new GameOpenException(new LiteralText("Two death zones may not share the same button"));
+            throw new GameOpenException(Text.literal("Two death zones may not share the same button"));
         }
 
         return new DeathRunMap(template, builtDeathTraps, checkpoints.build(), effectZones.build(), mapTexts.build(), spawn, runnerStart, deathStart, gate, finish, cfg.time());

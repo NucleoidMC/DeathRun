@@ -13,7 +13,7 @@ import io.github.foundationgames.deathrun.game.state.logic.entity.ActivatorTride
 import io.github.foundationgames.deathrun.game.state.logic.entity.DREntityLogic;
 import io.github.foundationgames.deathrun.game.state.logic.entity.EntityBehavior;
 import io.github.foundationgames.deathrun.util.DRUtil;
-import net.minecraft.block.AbstractButtonBlock;
+import net.minecraft.block.ButtonBlock;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.FallingBlockEntity;
@@ -31,9 +31,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.property.Properties;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
@@ -124,7 +122,7 @@ public class DRGame {
                 return TypedActionResult.fail(stack);
             });
 
-            game.listen(GamePlayerEvents.OFFER, offer -> offer.reject(new TranslatableText("status.deathrun.in_progress")));
+            game.listen(GamePlayerEvents.OFFER, offer -> offer.reject(Text.translatable("status.deathrun.in_progress")));
             game.listen(GamePlayerEvents.LEAVE, deathRun.players::onLeave);
             game.listen(PlayerDamageEvent.EVENT, (player, source, amount) -> ActionResult.FAIL);
             game.listen(PlayerDeathEvent.EVENT, (player, source) -> {
@@ -144,11 +142,11 @@ public class DRGame {
             if (gamePlayer.team == DRTeam.DEATHS) {
                 var pos = hit.getBlockPos();
                 var state = world.getBlockState(pos);
-                if (state.getBlock() instanceof AbstractButtonBlock button && !state.get(Properties.POWERED)) {
+                if (state.getBlock() instanceof ButtonBlock button && !state.get(Properties.POWERED)) {
                     var trapZone = map.trapZones.get(pos);
                     if (trapZone != null) {
                         world.setBlockState(pos, state.with(Properties.POWERED, true));
-                        world.createAndScheduleBlockTick(pos, button, DEATH_TRAP_COOLDOWN);
+                        world.scheduleBlockTick(pos, button, DEATH_TRAP_COOLDOWN);
                         trigger(trapZone);
                         return ActionResult.SUCCESS;
                     }
@@ -216,10 +214,10 @@ public class DRGame {
         int min = (int)Math.floor((float)totalSec / 60);
         int sec = totalSec % 60;
 
-        var timeText = new TranslatableText("insert.deathrun.time", min, sec).formatted(Formatting.DARK_GRAY);
-        var text = new TranslatableText("message.deathrun.finished")
+        var timeText = Text.translatable("insert.deathrun.time", min, sec).formatted(Formatting.DARK_GRAY);
+        var text = Text.translatable("message.deathrun.finished")
                 .formatted(Formatting.BLUE)
-                .append(new TranslatableText(getLocalizationForPlace(place), place).styled(style -> style.withColor(getColorForPlace(place)).withBold(true)))
+                .append(Text.translatable(getLocalizationForPlace(place), place).styled(style -> style.withColor(getColorForPlace(place)).withBold(true)))
                 .append(timeText);
         var pl = player.getPlayer();
 
@@ -227,9 +225,9 @@ public class DRGame {
         markFinished(player);
 
         if (place == 1) {
-            pl.playSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.MASTER, 0.85f, 0.95f);
-            pl.playSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.MASTER, 0.85f, 0.59f);
-            pl.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS, SoundCategory.MASTER, 0.85f, 0.95f);
+            pl.playSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP.value(), SoundCategory.MASTER, 0.85f, 0.95f);
+            pl.playSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP.value(), SoundCategory.MASTER, 0.85f, 0.59f);
+            pl.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.MASTER, 0.85f, 0.95f);
             pl.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1, 1);
             pl.playSound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.MASTER, 0.3f, 2);
 
@@ -237,11 +235,11 @@ public class DRGame {
         } else {
             pl.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.MASTER, 1, 0.945f);
             pl.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.MASTER, 1, 0.59f);
-            pl.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS, SoundCategory.MASTER, 0.85f, 0.785f);
+            pl.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.MASTER, 0.85f, 0.785f);
         }
 
-        var broadcast = new TranslatableText("message.deathrun.player_finished", pl.getEntityName()).formatted(Formatting.LIGHT_PURPLE)
-                .append(new TranslatableText(getLocalizationForPlace(place), place).styled(style -> style.withColor(getColorForPlace(place))))
+        var broadcast = Text.translatable("message.deathrun.player_finished", pl.getEntityName()).formatted(Formatting.LIGHT_PURPLE)
+                .append(Text.translatable(getLocalizationForPlace(place), place).styled(style -> style.withColor(getColorForPlace(place))))
                 .append(timeText);
         players.forEach(p -> {
             if (p != pl) {
@@ -281,15 +279,15 @@ public class DRGame {
     }
 
     public void broadcastRankings() {
-        var header = new LiteralText("---- ").formatted(Formatting.GRAY).append(new TranslatableText("message.deathrun.game_ended").formatted(Formatting.RED).append(new LiteralText(" ----").formatted(Formatting.GRAY)));
+        var header = Text.literal("---- ").formatted(Formatting.GRAY).append(Text.translatable("message.deathrun.game_ended").formatted(Formatting.RED).append(Text.literal(" ----").formatted(Formatting.GRAY)));
         var pedestal = new ArrayList<Text>();
         var places = new ArrayList<>(finished.keySet());
         for (int i = 0; i <= 2; i++) {
             int place = i + 1;
             if (i < places.size()) {
-                pedestal.add(new LiteralText(Integer.toString(place))
+                pedestal.add(Text.literal(Integer.toString(place))
                         .styled(style -> style.withColor(getColorForPlace(place)).withBold(true))
-                        .append(new LiteralText(" - "+places.get(i).getPlayer().getEntityName()).formatted(Formatting.GRAY).styled(style -> style.withBold(false)))
+                        .append(Text.literal(" - "+places.get(i).getPlayer().getEntityName()).formatted(Formatting.GRAY).styled(style -> style.withBold(false)))
                 );
             }
         }
@@ -303,12 +301,12 @@ public class DRGame {
                 int idx = places.indexOf(gamePlayer);
                 if (idx >= 0) {
                     int place = idx + 1;
-                    pl.sendMessage(new TranslatableText("message.deathrun.your_place", pl.getEntityName())
+                    pl.sendMessage(Text.translatable("message.deathrun.your_place", pl.getEntityName())
                             .formatted(Formatting.BLUE)
-                            .append(new TranslatableText(getLocalizationForPlace(place), place)
+                            .append(Text.translatable(getLocalizationForPlace(place), place)
                                     .styled(style -> style.withColor(getColorForPlace(place)).withBold(true))), false);
                 } else if (gamePlayer.team == DRTeam.RUNNERS) {
-                    pl.sendMessage(new TranslatableText("message.deathrun.did_not_finish", pl.getEntityName()).formatted(Formatting.BLUE), false);
+                    pl.sendMessage(Text.translatable("message.deathrun.did_not_finish", pl.getEntityName()).formatted(Formatting.BLUE), false);
                 }
             }
         });
@@ -319,15 +317,15 @@ public class DRGame {
             if (startTimer % 20 == 0) {
                 int sec = startTimer / 20;
                 var format = sec <= 3 ? Formatting.GREEN : Formatting.DARK_GREEN;
-                players.showTitle(new LiteralText(Integer.toString(sec)).formatted(Formatting.BOLD, format), 19);
-                players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_HAT, SoundCategory.PLAYERS, 1.0f, 1.0f);
-                if (sec <= 3) players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS, SoundCategory.PLAYERS, 1.0f, 1.0f);
+                players.showTitle(Text.literal(Integer.toString(sec)).formatted(Formatting.BOLD, format), 19);
+                players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_HAT.value(), SoundCategory.PLAYERS, 1.0f, 1.0f);
+                if (sec <= 3) players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.PLAYERS, 1.0f, 1.0f);
             }
             startTimer--;
             if (startTimer == 0) {
-                players.showTitle(new TranslatableText("title.deathrun.run").formatted(Formatting.BOLD, Formatting.GOLD), 40);
-                players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_PLING, SoundCategory.PLAYERS, 1.0f, 1.0f);
-                players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS, SoundCategory.PLAYERS, 1.0f, 0.5f);
+                players.showTitle(Text.translatable("title.deathrun.run").formatted(Formatting.BOLD, Formatting.GOLD), 40);
+                players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), SoundCategory.PLAYERS, 1.0f, 1.0f);
+                players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.PLAYERS, 1.0f, 0.5f);
                 start();
             }
         }
@@ -339,7 +337,7 @@ public class DRGame {
                     if (player.team == DRTeam.RUNNERS && !player.finished) {
                         key = "message.deathrun.seconds_to_finish";
                     }
-                    pl.sendMessage(new TranslatableText(key, (int)((float)endCountdown / 20)), true);
+                    pl.sendMessage(Text.translatable(key, (int)((float)endCountdown / 20)), true);
                 }
             });
             endCountdown--;
@@ -464,9 +462,9 @@ public class DRGame {
 
         private void notifyCheckpoint() {
             var player = getPlayer();
-            player.sendMessage(new TranslatableText("message.deathrun.checkpoint").formatted(Formatting.GREEN), false);
-            player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_PLING, SoundCategory.MASTER, 0.9f, 0.79f);
-            player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS, SoundCategory.MASTER, 0.9f, 0.785f);
+            player.sendMessage(Text.translatable("message.deathrun.checkpoint").formatted(Formatting.GREEN), false);
+            player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), SoundCategory.MASTER, 0.9f, 0.79f);
+            player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.MASTER, 0.9f, 0.785f);
         }
     }
 
