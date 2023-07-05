@@ -367,26 +367,26 @@ public class DRGame {
             // Water death
             player -> {
                 var serverP = player.getPlayer();
-                var world = serverP.world;
+                var world = serverP.getWorld();
                 var fluid = world.getFluidState(BlockPos.ofFloored(serverP.getPos().add(0, 0.65, 0))).getFluid();
                 return fluid == Fluids.WATER || fluid == Fluids.FLOWING_WATER;
             },
             // Lightning death
             player -> {
                 var serverP = player.getPlayer();
-                var world = serverP.world;
+                var world = serverP.getWorld();
                 return world.getEntitiesByClass(LightningEntity.class, serverP.getBoundingBox().expand(1.5, 1.5, 1.5), e -> true).size() > 0;
             },
             // Arrow death
             player -> {
                 var serverP = player.getPlayer();
-                var world = serverP.world;
+                var world = serverP.getWorld();
                 return world.getEntitiesByClass(ArrowEntity.class, serverP.getBoundingBox().expand(0.08, 0.08, 0.08), e -> true).size() > 0;
             },
             // Falling hazard death
             player -> {
                 var serverP = player.getPlayer();
-                var world = serverP.world;
+                var world = serverP.getWorld();
                 return world.getEntitiesByClass(FallingBlockEntity.class, serverP.getBoundingBox(),
                         e -> e.getBlockState().isOf(Blocks.POINTED_DRIPSTONE)).size() > 0;
             }
