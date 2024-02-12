@@ -10,7 +10,7 @@ import java.util.List;
 
 public record MapText(Vec3d pos, TextData text) {
     public record TextData(List<MutableText> lines) {
-        public static final Codec<MutableText> JSON_TEXT_CODEC = Codec.STRING.xmap(Text.Serializer::fromJson, Text.Serializer::toJson);
+        public static final Codec<MutableText> JSON_TEXT_CODEC = Codec.STRING.xmap(Text.Serialization::fromJson, Text.Serialization::toJsonString);
 
         public static final Codec<TextData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.list(JSON_TEXT_CODEC).fieldOf("lines").forGetter(TextData::lines)

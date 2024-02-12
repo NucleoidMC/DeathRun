@@ -238,7 +238,7 @@ public class DRGame {
             pl.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.MASTER, 0.85f, 0.785f);
         }
 
-        var broadcast = Text.translatable("message.deathrun.player_finished", pl.getEntityName()).formatted(Formatting.LIGHT_PURPLE)
+        var broadcast = Text.translatable("message.deathrun.player_finished", pl.getNameForScoreboard()).formatted(Formatting.LIGHT_PURPLE)
                 .append(Text.translatable(getLocalizationForPlace(place), place).styled(style -> style.withColor(getColorForPlace(place))))
                 .append(timeText);
         players.forEach(p -> {
@@ -287,7 +287,7 @@ public class DRGame {
             if (i < places.size()) {
                 pedestal.add(Text.literal(Integer.toString(place))
                         .styled(style -> style.withColor(getColorForPlace(place)).withBold(true))
-                        .append(Text.literal(" - "+places.get(i).getPlayer().getEntityName()).formatted(Formatting.GRAY).styled(style -> style.withBold(false)))
+                        .append(Text.literal(" - "+places.get(i).getPlayer().getNameForScoreboard()).formatted(Formatting.GRAY).styled(style -> style.withBold(false)))
                 );
             }
         }
@@ -301,12 +301,12 @@ public class DRGame {
                 int idx = places.indexOf(gamePlayer);
                 if (idx >= 0) {
                     int place = idx + 1;
-                    pl.sendMessage(Text.translatable("message.deathrun.your_place", pl.getEntityName())
+                    pl.sendMessage(Text.translatable("message.deathrun.your_place", pl.getNameForScoreboard())
                             .formatted(Formatting.BLUE)
                             .append(Text.translatable(getLocalizationForPlace(place), place)
                                     .styled(style -> style.withColor(getColorForPlace(place)).withBold(true))), false);
                 } else if (gamePlayer.team == DRTeam.RUNNERS) {
-                    pl.sendMessage(Text.translatable("message.deathrun.did_not_finish", pl.getEntityName()).formatted(Formatting.BLUE), false);
+                    pl.sendMessage(Text.translatable("message.deathrun.did_not_finish", pl.getNameForScoreboard()).formatted(Formatting.BLUE), false);
                 }
             }
         });

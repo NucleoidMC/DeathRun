@@ -7,6 +7,7 @@ import io.github.foundationgames.deathrun.game.state.DRGame;
 import io.github.foundationgames.deathrun.game.state.logic.entity.ProjectileEntityBehavior;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.projectile.ArrowEntity;
+import net.minecraft.item.Items;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
@@ -38,7 +39,7 @@ public class DispenserArrowDeathTrap extends DeathTrap {
             if (state.isOf(Blocks.DISPENSER)) {
                 var facing = state.get(Properties.FACING);
                 var arrPos = Vec3d.ofCenter(pos.offset(facing));
-                var arrow = new ArrowEntity(world, arrPos.x, arrPos.y, arrPos.z);
+                var arrow = new ArrowEntity(world, arrPos.x, arrPos.y, arrPos.z, Items.ARROW.getDefaultStack());
                 arrow.setVelocity(facing.getOffsetX(), facing.getOffsetY() + 0.1, facing.getOffsetZ(), force, variation);
                 world.syncWorldEvent(DISPENSER_EVENT_ID, pos.offset(facing), 0);
                 game.spawn(arrow, new ProjectileEntityBehavior.Arrow());
