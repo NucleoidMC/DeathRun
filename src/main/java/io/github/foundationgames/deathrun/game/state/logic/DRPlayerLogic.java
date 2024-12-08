@@ -16,11 +16,12 @@ import net.minecraft.util.Util;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.GameMode;
 import org.jetbrains.annotations.Nullable;
-import xyz.nucleoid.plasmid.game.GameActivity;
-import xyz.nucleoid.plasmid.game.player.PlayerOffer;
-import xyz.nucleoid.plasmid.game.player.PlayerOfferResult;
-import xyz.nucleoid.plasmid.game.player.PlayerSet;
-import xyz.nucleoid.plasmid.util.ItemStackBuilder;
+import xyz.nucleoid.plasmid.api.game.GameActivity;
+import xyz.nucleoid.plasmid.api.game.player.JoinAcceptor;
+import xyz.nucleoid.plasmid.api.game.player.JoinAcceptorResult;
+import xyz.nucleoid.plasmid.api.game.player.JoinIntent;
+import xyz.nucleoid.plasmid.api.game.player.PlayerSet;
+import xyz.nucleoid.plasmid.api.util.ItemStackBuilder;
 
 import java.util.*;
 
@@ -54,34 +55,7 @@ public class DRPlayerLogic implements PlayerSet {
         var max = spawn.max();
         var x = min.getX() + world.random.nextInt(max.getX() - min.getX()) + 0.5;
         var z = min.getZ() + world.random.nextInt(max.getZ() - min.getZ()) + 0.5;
-        player.teleport(world, x, min.getY(), z, 0f, 0f);
-
-        var leaveItem = ItemStackBuilder.of(Items.MAGENTA_GLAZED_TERRACOTTA)
-                .setName(Text.translatable("item.deathrun.leave_game").styled(style -> style.withColor(0x896bff).withItalic(false))).build();
-        DRItemLogic.apply("leave_game", leaveItem);
-
-        if (!config.runnersOnly()) {
-            var runnerItem = ItemStackBuilder.of(DRUtil.createRunnerHead())
-                    .setName(Text.translatable("item.deathrun.request_runner").styled(style -> style.withColor(0x6bffc1).withItalic(false))).build();
-            DRItemLogic.apply("request_runner", runnerItem);
-
-            var deathItem = ItemStackBuilder.of(DRUtil.createDeathHead())
-                    .setName(Text.translatable("item.deathrun.request_death").styled(style -> style.withColor(0x6bffc1).withItalic(false))).build();
-            DRItemLogic.apply("request_death", deathItem);
-
-            var clearItem = ItemStackBuilder.of(DRUtil.createClearHead())
-                    .setName(Text.translatable("item.deathrun.request_clear").styled(style -> style.withColor(0xff6e42).withItalic(false))).build();
-            DRItemLogic.apply("request_clear", clearItem);
-
-            player.getInventory().setStack(3, runnerItem);
-            player.getInventory().setStack(4, clearItem);
-            player.getInventory().setStack(5, deathItem);
-        } else {
-            var runnerItem = ItemStackBuilder.of(DRUtil.createRunnerHeadB())
-                    .setName(Text.translatable("item.deathrun.runners_only").styled(style -> style.withColor(0xffca38).withItalic(false))).build();
-            player.getInventory().setStack(4, runnerItem);
-        }
-        player.getInventory().setStack(8, leaveItem);
+        player.teleport(world, x, min.getY(), z, Set.of(), 0f, 0f, false);
         player.changeGameMode(GameMode.ADVENTURE);
     }
 
@@ -113,7 +87,7 @@ public class DRPlayerLogic implements PlayerSet {
                 x = center.x;
                 z = center.z;
             }
-            player.teleport(world, x, spawn.min().getY(), z, spawnYaw, 0f);
+            player.teleport(world, x, spawn.min().getY(), z, Set.of(), spawnYaw, 0f, false);
             pl.getPlayer().getInventory().clear();
             if (gamePlayer.team == DRTeam.RUNNERS && !gamePlayer.isFinished()) {
                 var boostItem = ItemStackBuilder.of(Items.FEATHER)
@@ -131,6 +105,10 @@ public class DRPlayerLogic implements PlayerSet {
             }
         }
         player.changeGameMode(GameMode.ADVENTURE);
+    }
+
+    public void resetSpectator(ServerPlayerEntity player) {
+        player.changeGameMode(GameMode.SPECTATOR);
     }
 
     public static void sortTeams(Random random, DRPlayerLogic waiting, DRGame game) {
@@ -183,10 +161,22 @@ public class DRPlayerLogic implements PlayerSet {
         this.players.remove(player);
     }
 
-    public PlayerOfferResult offerWaiting(PlayerOffer offer) {
-        this.add(new DRWaiting.Player(offer.player(), this));
-        return offer.accept(world, map.spawn.centerBottom())
-                .and(() -> this.resetWaiting(offer.player()));
+    public JoinAcceptorResult acceptWaiting(JoinAcceptor offer) {
+        return offer.teleport(world, map.spawn.centerBottom())
+                .thenRunForEach((player, intent) -> {
+                    if (intent == JoinIntent.PLAY) {
+                        this.add(new DRWaiting.Player(player, this));
+                    }
+                    this.resetWaiting(player);
+                });
+    }
+
+
+    public JoinAcceptorResult acceptSpectator(JoinAcceptor offer) {
+        return offer.teleport(world, map.spawn.centerBottom())
+                .thenRunForEach((player, intent) -> {
+                    this.resetSpectator(player);
+                });
     }
 
     public void remove(DRPlayer player) {

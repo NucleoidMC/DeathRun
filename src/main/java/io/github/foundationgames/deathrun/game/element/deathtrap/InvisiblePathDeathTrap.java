@@ -1,6 +1,7 @@
 package io.github.foundationgames.deathrun.game.element.deathtrap;
 
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.foundationgames.deathrun.game.element.DeathTrap;
 import io.github.foundationgames.deathrun.game.state.DRGame;
@@ -11,7 +12,7 @@ import net.minecraft.util.math.BlockPos;
 import xyz.nucleoid.map_templates.BlockBounds;
 
 public class InvisiblePathDeathTrap extends ResettingDeathTrap {
-    public static final Codec<InvisiblePathDeathTrap> CODEC = RecordCodecBuilder.create(instance ->
+    public static final MapCodec<InvisiblePathDeathTrap> CODEC = RecordCodecBuilder.mapCodec(instance ->
             instance.group(
                     BlockState.CODEC.optionalFieldOf("block", Blocks.AMETHYST_BLOCK.getDefaultState()).forGetter(trap -> trap.state),
                     Codec.INT.optionalFieldOf("down", 2).forGetter(trap -> trap.down)
@@ -47,7 +48,7 @@ public class InvisiblePathDeathTrap extends ResettingDeathTrap {
     }
 
     @Override
-    public Codec<? extends DeathTrap> getCodec() {
+    public MapCodec<? extends DeathTrap> getCodec() {
         return CODEC;
     }
 }

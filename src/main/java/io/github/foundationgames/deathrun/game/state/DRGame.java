@@ -35,15 +35,16 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import xyz.nucleoid.plasmid.game.GameActivity;
-import xyz.nucleoid.plasmid.game.GameCloseReason;
-import xyz.nucleoid.plasmid.game.GameSpace;
-import xyz.nucleoid.plasmid.game.event.GameActivityEvents;
-import xyz.nucleoid.plasmid.game.event.GamePlayerEvents;
+import xyz.nucleoid.plasmid.api.game.GameActivity;
+import xyz.nucleoid.plasmid.api.game.GameCloseReason;
+import xyz.nucleoid.plasmid.api.game.GameSpace;
+import xyz.nucleoid.plasmid.api.game.event.GameActivityEvents;
+import xyz.nucleoid.plasmid.api.game.event.GamePlayerEvents;
+import xyz.nucleoid.plasmid.api.game.player.JoinOffer;
+import xyz.nucleoid.stimuli.event.EventResult;
 import xyz.nucleoid.stimuli.event.block.BlockUseEvent;
 import xyz.nucleoid.stimuli.event.item.ItemUseEvent;
 import xyz.nucleoid.stimuli.event.player.PlayerDamageEvent;
@@ -97,40 +98,42 @@ public class DRGame {
             deathRun.players.forEach(deathRun.players::resetActive);
 
             deathRun.items.addBehavior("boost", (player, stack, hand) -> {
-                if (deathRun.players.get(player) instanceof Player gamePl && gamePl.started && !gamePl.finished && !player.getItemCooldownManager().isCoolingDown(stack.getItem())) {
+                if (deathRun.players.get(player) instanceof Player gamePl && gamePl.started && !gamePl.finished && !player.getItemCooldownManager().isCoolingDown(stack)) {
                     double yaw = Math.toRadians(-player.getYaw());
                     var vel = new Vec3d(1.25 * Math.sin(yaw), 0.5, 1.25 * Math.cos(yaw));
                     player.networkHandler.sendPacket(new EntityVelocityUpdateS2CPacket(player.getId(), vel));
-                    deathRun.world.getPlayers().forEach(p -> p.networkHandler.sendPacket(new ParticleS2CPacket(ParticleTypes.EXPLOSION, false, player.getX(), player.getY(), player.getZ(), 0, 0, 0, 0, 1)));
+                    deathRun.world.getPlayers().forEach(p -> p.networkHandler.sendPacket(new ParticleS2CPacket(ParticleTypes.EXPLOSION, false, false, player.getX(), player.getY(), player.getZ(), 0, 0, 0, 0, 1)));
                     deathRun.players.playSound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, SoundCategory.PLAYERS, 0.75f, 0.69f);
-                    player.getItemCooldownManager().set(stack.getItem(), 188);
-                    return TypedActionResult.success(stack);
+                    player.getItemCooldownManager().set(stack, 188);
+                    return ActionResult.SUCCESS_SERVER;
                 }
-                return TypedActionResult.pass(stack);
+                return ActionResult.PASS;
             });
 
             deathRun.items.addBehavior("activator", (player, stack, hand) -> {
-                if (deathRun.players.get(player) instanceof Player gamePl && gamePl.started && !gamePl.finished && !player.getItemCooldownManager().isCoolingDown(stack.getItem())) {
+                if (deathRun.players.get(player) instanceof Player gamePl && gamePl.started && !gamePl.finished && !player.getItemCooldownManager().isCoolingDown(stack)) {
                     var world = deathRun.world;
                     var trident = new TridentEntity(world, player, stack);
                     trident.setVelocity(player, player.getPitch(), player.getYaw(), 0, 3, 1);
                     deathRun.spawn(trident, new ActivatorTridentEntityBehavior());
-                    world.playSoundFromEntity(null, trident, SoundEvents.ITEM_TRIDENT_THROW, SoundCategory.PLAYERS, 1, 1);
-                    player.getItemCooldownManager().set(stack.getItem(), 200);
-                    return TypedActionResult.success(stack);
+                    world.playSoundFromEntity(null, trident, SoundEvents.ITEM_TRIDENT_THROW.value(), SoundCategory.PLAYERS, 1, 1);
+                    player.getItemCooldownManager().set(stack, 200);
+                    return ActionResult.SUCCESS_SERVER;
                 }
-                return TypedActionResult.fail(stack);
+                return ActionResult.PASS;
             });
 
-            game.listen(GamePlayerEvents.OFFER, offer -> offer.reject(Text.translatable("status.deathrun.in_progress")));
+            game.listen(GamePlayerEvents.OFFER, JoinOffer::acceptSpectators);
+            game.listen(GamePlayerEvents.ACCEPT, deathRun.players::acceptSpectator);
             game.listen(GamePlayerEvents.LEAVE, deathRun.players::onLeave);
-            game.listen(PlayerDamageEvent.EVENT, (player, source, amount) -> ActionResult.FAIL);
+            game.listen(PlayerDamageEvent.EVENT, (player, source, amount) -> EventResult.DENY);
             game.listen(PlayerDeathEvent.EVENT, (player, source) -> {
                 player.setHealth(20f);
                 deathRun.players.resetWaiting(player);
-                return ActionResult.FAIL;
+                return EventResult.DENY;
             });
             game.listen(GameActivityEvents.TICK, deathRun::tick);
+            game.listen(GameActivityEvents.STATE_UPDATE, state -> state.canPlay(false));
             game.listen(BlockUseEvent.EVENT, deathRun::useBlock);
             game.listen(GameActivityEvents.TICK, deathRun.players::tick);
             game.listen(GameActivityEvents.TICK, deathRun.entities::tick);
@@ -225,17 +228,17 @@ public class DRGame {
         markFinished(player);
 
         if (place == 1) {
-            pl.playSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP.value(), SoundCategory.MASTER, 0.85f, 0.95f);
-            pl.playSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP.value(), SoundCategory.MASTER, 0.85f, 0.59f);
-            pl.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.MASTER, 0.85f, 0.95f);
-            pl.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1, 1);
-            pl.playSound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.MASTER, 0.3f, 2);
+            pl.playSoundToPlayer(SoundEvents.BLOCK_NOTE_BLOCK_HARP.value(), SoundCategory.MASTER, 0.85f, 0.95f);
+            pl.playSoundToPlayer(SoundEvents.BLOCK_NOTE_BLOCK_HARP.value(), SoundCategory.MASTER, 0.85f, 0.59f);
+            pl.playSoundToPlayer(SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.MASTER, 0.85f, 0.95f);
+            pl.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1, 1);
+            pl.playSoundToPlayer(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.MASTER, 0.3f, 2);
 
             this.endCountdown = END_COUNTDOWN;
         } else {
-            pl.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.MASTER, 1, 0.945f);
-            pl.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.MASTER, 1, 0.59f);
-            pl.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.MASTER, 0.85f, 0.785f);
+            pl.playSoundToPlayer(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.MASTER, 1, 0.945f);
+            pl.playSoundToPlayer(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.MASTER, 1, 0.59f);
+            pl.playSoundToPlayer(SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.MASTER, 0.85f, 0.785f);
         }
 
         var broadcast = Text.translatable("message.deathrun.player_finished", pl.getNameForScoreboard()).formatted(Formatting.LIGHT_PURPLE)
@@ -432,7 +435,7 @@ public class DRGame {
                     if (predicate.test(this)) {
                         var pl = getPlayer();
                         logic.resetActive(pl);
-                        pl.playSound(SoundEvents.ENTITY_GENERIC_HURT, SoundCategory.PLAYERS, 1, 1);
+                        pl.playSoundToPlayer(SoundEvents.ENTITY_GENERIC_HURT, SoundCategory.PLAYERS, 1, 1);
                     }
                 }
                 for (CheckpointZone zone : game.map.checkpoints) {
@@ -463,8 +466,8 @@ public class DRGame {
         private void notifyCheckpoint() {
             var player = getPlayer();
             player.sendMessage(Text.translatable("message.deathrun.checkpoint").formatted(Formatting.GREEN), false);
-            player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), SoundCategory.MASTER, 0.9f, 0.79f);
-            player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.MASTER, 0.9f, 0.785f);
+            player.playSoundToPlayer(SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), SoundCategory.MASTER, 0.9f, 0.79f);
+            player.playSoundToPlayer(SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.MASTER, 0.9f, 0.785f);
         }
     }
 

@@ -1,5 +1,6 @@
 package io.github.foundationgames.deathrun.game.state;
 
+import eu.pb4.sgui.api.elements.GuiElementBuilder;
 import io.github.foundationgames.deathrun.game.DeathRunConfig;
 import io.github.foundationgames.deathrun.game.map.DeathRunMap;
 import io.github.foundationgames.deathrun.game.state.logic.DRItemLogic;
@@ -10,16 +11,20 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.world.GameRules;
 import xyz.nucleoid.fantasy.RuntimeWorldConfig;
-import xyz.nucleoid.plasmid.game.GameActivity;
-import xyz.nucleoid.plasmid.game.GameOpenContext;
-import xyz.nucleoid.plasmid.game.GameOpenProcedure;
-import xyz.nucleoid.plasmid.game.GameResult;
-import xyz.nucleoid.plasmid.game.common.GameWaitingLobby;
-import xyz.nucleoid.plasmid.game.event.GameActivityEvents;
-import xyz.nucleoid.plasmid.game.event.GamePlayerEvents;
+import xyz.nucleoid.plasmid.api.game.GameActivity;
+import xyz.nucleoid.plasmid.api.game.GameOpenContext;
+import xyz.nucleoid.plasmid.api.game.GameOpenProcedure;
+import xyz.nucleoid.plasmid.api.game.GameResult;
+import xyz.nucleoid.plasmid.api.game.common.GameWaitingLobby;
+import xyz.nucleoid.plasmid.api.game.event.GameActivityEvents;
+import xyz.nucleoid.plasmid.api.game.event.GamePlayerEvents;
+import xyz.nucleoid.plasmid.api.game.event.GameWaitingLobbyEvents;
+import xyz.nucleoid.plasmid.api.game.player.JoinOffer;
+import xyz.nucleoid.plasmid.api.util.ItemStackBuilder;
+import xyz.nucleoid.stimuli.event.EventResult;
 import xyz.nucleoid.stimuli.event.item.ItemUseEvent;
 import xyz.nucleoid.stimuli.event.player.PlayerDeathEvent;
 
@@ -59,37 +64,44 @@ public class DRWaiting {
 
             DRUtil.setBaseGameRules(game);
 
-            waiting.items.addBehavior("leave_game", (player, stack, hand) -> {
-                player.sendMessage(Text.translatable("message.deathrun.left_game").formatted(Formatting.RED), false);
-                game.getGameSpace().getPlayers().kick(player);
-                return TypedActionResult.success(stack);
-            });
-
-            waiting.items.addBehavior("request_runner", (player, stack, hand) -> {
-                player.sendMessage(Text.translatable("message.deathrun.requested_runner").formatted(Formatting.GOLD), false);
-                if (waiting.players.get(player) instanceof DRWaiting.Player wp) wp.requestedTeam = DRTeam.RUNNERS;
-                return TypedActionResult.success(stack);
-            });
-
-            waiting.items.addBehavior("request_death", (player, stack, hand) -> {
-                player.sendMessage(Text.translatable("message.deathrun.requested_death").formatted(Formatting.GOLD), false);
-                if (waiting.players.get(player) instanceof DRWaiting.Player wp) wp.requestedTeam = DRTeam.DEATHS;
-                return TypedActionResult.success(stack);
-            });
-
-            waiting.items.addBehavior("request_clear", (player, stack, hand) -> {
-                player.sendMessage(Text.translatable("message.deathrun.cleared_requests").formatted(Formatting.GREEN), false);
-                if (waiting.players.get(player) instanceof DRWaiting.Player wp) wp.requestedTeam = null;
-                return TypedActionResult.success(stack);
+            game.listen(GameWaitingLobbyEvents.BUILD_UI_LAYOUT, (layout, player) -> {
+                if (cfg.runnersOnly() || game.getGameSpace().getPlayers().spectators().contains(player)) {
+                    return;
+                }
+                layout.addLeading(() -> GuiElementBuilder.from(DRUtil.createRunnerHead())
+                        .setName(Text.translatable("item.deathrun.request_runner").styled(style -> style.withColor(0x6bffc1).withItalic(false)))
+                        .setCallback(() -> {
+                            player.sendMessage(Text.translatable("message.deathrun.requested_runner").formatted(Formatting.GOLD), false);
+                            if (waiting.players.get(player) instanceof DRWaiting.Player wp) wp.requestedTeam = DRTeam.RUNNERS;
+                            player.swingHand(Hand.MAIN_HAND, true);
+                        })
+                        .build());
+                layout.addLeading(() -> GuiElementBuilder.from(DRUtil.createDeathHead())
+                        .setName(Text.translatable("item.deathrun.request_death").styled(style -> style.withColor(0x6bffc1).withItalic(false)))
+                        .setCallback(() -> {
+                            player.sendMessage(Text.translatable("message.deathrun.requested_death").formatted(Formatting.GOLD), false);
+                            if (waiting.players.get(player) instanceof DRWaiting.Player wp) wp.requestedTeam = DRTeam.DEATHS;
+                            player.swingHand(Hand.MAIN_HAND, true);
+                        })
+                        .build());
+                layout.addLeading(() -> GuiElementBuilder.from(DRUtil.createClearHead())
+                        .setName(Text.translatable("item.deathrun.request_clear").styled(style -> style.withColor(0xff6e42).withItalic(false)))
+                        .setCallback(() -> {
+                            player.sendMessage(Text.translatable("message.deathrun.cleared_requests").formatted(Formatting.GREEN), false);
+                            if (waiting.players.get(player) instanceof DRWaiting.Player wp) wp.requestedTeam = null;
+                            player.swingHand(Hand.MAIN_HAND, true);
+                        })
+                        .build());
             });
 
             game.listen(GameActivityEvents.REQUEST_START, waiting::requestStart);
-            game.listen(GamePlayerEvents.OFFER, waiting.players::offerWaiting);
+            game.listen(GamePlayerEvents.OFFER, JoinOffer::accept);
+            game.listen(GamePlayerEvents.ACCEPT, waiting.players::acceptWaiting);
             game.listen(GamePlayerEvents.LEAVE, waiting.players::onLeave);
             game.listen(PlayerDeathEvent.EVENT, (player, source) -> {
                 player.setHealth(20f);
                 waiting.players.resetWaiting(player);
-                return ActionResult.FAIL;
+                return EventResult.DENY;
             });
             game.listen(GameActivityEvents.TICK, waiting.players::tick);
         });

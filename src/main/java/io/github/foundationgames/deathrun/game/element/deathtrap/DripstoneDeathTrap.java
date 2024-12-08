@@ -1,6 +1,7 @@
 package io.github.foundationgames.deathrun.game.element.deathtrap;
 
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.foundationgames.deathrun.game.element.DeathTrap;
 import io.github.foundationgames.deathrun.game.state.DRGame;
@@ -16,7 +17,7 @@ import net.minecraft.util.math.Vec3d;
 import xyz.nucleoid.map_templates.BlockBounds;
 
 public class DripstoneDeathTrap extends DeathTrap {
-    public static final Codec<DripstoneDeathTrap> CODEC = RecordCodecBuilder.create(instance ->
+    public static final MapCodec<DripstoneDeathTrap> CODEC = RecordCodecBuilder.mapCodec(instance ->
             instance.group(
                     Codec.INT.optionalFieldOf("length", 2).forGetter(trap -> trap.length)
             ).apply(instance, DripstoneDeathTrap::new)
@@ -59,7 +60,7 @@ public class DripstoneDeathTrap extends DeathTrap {
     }
 
     @Override
-    public Codec<? extends DeathTrap> getCodec() {
+    public MapCodec<? extends DeathTrap> getCodec() {
         return CODEC;
     }
 }

@@ -1,6 +1,7 @@
 package io.github.foundationgames.deathrun.game.element.deathtrap;
 
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import io.github.foundationgames.deathrun.game.element.DeathTrap;
 import io.github.foundationgames.deathrun.game.state.DRGame;
 import net.minecraft.block.Blocks;
@@ -13,7 +14,7 @@ import net.minecraft.util.math.BlockPos;
 import xyz.nucleoid.map_templates.BlockBounds;
 
 public class DripleafDeathTrap extends DeathTrap {
-    public static final Codec<DripleafDeathTrap> CODEC = Codec.unit(DripleafDeathTrap::new);
+    public static final MapCodec<DripleafDeathTrap> CODEC = MapCodec.unit(DripleafDeathTrap::new);
 
     @Override
     public void trigger(DRGame game, ServerWorld world, BlockBounds zone) {
@@ -29,7 +30,7 @@ public class DripleafDeathTrap extends DeathTrap {
     }
 
     @Override
-    public Codec<? extends DeathTrap> getCodec() {
+    public MapCodec<? extends DeathTrap> getCodec() {
         return CODEC;
     }
 }

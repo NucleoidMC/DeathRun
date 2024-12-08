@@ -4,15 +4,18 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.DataResult;
-import eu.pb4.holograms.api.Holograms;
 import io.github.foundationgames.deathrun.game.element.CheckpointZone;
 import io.github.foundationgames.deathrun.game.element.DeathTrapZone;
 import io.github.foundationgames.deathrun.game.element.EffectZone;
 import io.github.foundationgames.deathrun.game.element.MapText;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import net.minecraft.text.Texts;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
@@ -20,8 +23,8 @@ import xyz.nucleoid.map_templates.BlockBounds;
 import xyz.nucleoid.map_templates.MapTemplate;
 import xyz.nucleoid.map_templates.MapTemplateSerializer;
 import xyz.nucleoid.map_templates.TemplateRegion;
-import xyz.nucleoid.plasmid.game.GameOpenException;
-import xyz.nucleoid.plasmid.game.world.generator.TemplateChunkGenerator;
+import xyz.nucleoid.plasmid.api.game.GameOpenException;
+import xyz.nucleoid.plasmid.api.game.world.generator.TemplateChunkGenerator;
 
 import java.io.IOException;
 import java.util.List;
@@ -134,10 +137,11 @@ public class DeathRunMap {
         for (var mapText : mapTexts) {
             var lines = mapText.text().lines();
             Vec3d pos = mapText.pos().add(0, (lines.size() * 0.35) * 0.5, 0);
-            for (var text : lines) {
-                Holograms.create(world, pos, text).show();
-                pos = pos.add(0, -0.35, 0);
-            }
+            var display = EntityType.TEXT_DISPLAY.create(world, SpawnReason.LOAD);
+            display.setPosition(pos);
+            display.setText(Texts.join(lines, Text.literal("\n")));
+            display.setBillboardMode(DisplayEntity.BillboardMode.CENTER);
+            world.spawnEntity(display);
         }
     }
 }

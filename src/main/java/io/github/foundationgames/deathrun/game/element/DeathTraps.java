@@ -5,12 +5,12 @@ import com.mojang.serialization.MapCodec;
 import io.github.foundationgames.deathrun.DeathRun;
 import io.github.foundationgames.deathrun.game.element.deathtrap.*;
 import net.minecraft.util.Identifier;
-import xyz.nucleoid.plasmid.registry.TinyRegistry;
+import xyz.nucleoid.plasmid.api.util.TinyRegistry;
 
 import java.util.function.Function;
 
 public class DeathTraps {
-    public static final TinyRegistry<Codec<? extends DeathTrap>> REGISTRY = TinyRegistry.create();
+    public static final TinyRegistry<MapCodec<? extends DeathTrap>> REGISTRY = TinyRegistry.create();
     public static final MapCodec<DeathTrap> CODEC = REGISTRY.dispatchMap(DeathTrap::getCodec, Function.identity());
 
     public static final Identifier DRIPLEAF = register("dripleaf", DripleafDeathTrap.CODEC);
@@ -25,11 +25,11 @@ public class DeathTraps {
         return REGISTRY.getIdentifier(piece.getCodec());
     }
 
-    private static Identifier register(String name, Codec<? extends DeathTrap> codec) {
+    private static Identifier register(String name, MapCodec<? extends DeathTrap> codec) {
         return register(DeathRun.id(name), codec);
     }
 
-    public static Identifier register(Identifier identifier, Codec<? extends DeathTrap> codec) {
+    public static Identifier register(Identifier identifier, MapCodec<? extends DeathTrap> codec) {
         REGISTRY.register(identifier, codec);
         return identifier;
     }

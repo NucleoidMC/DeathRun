@@ -1,6 +1,7 @@
 package io.github.foundationgames.deathrun.game.element.deathtrap;
 
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import io.github.foundationgames.deathrun.game.element.DeathTrap;
 import io.github.foundationgames.deathrun.game.state.DRGame;
 import net.minecraft.block.Blocks;
@@ -13,7 +14,7 @@ import net.minecraft.util.math.BlockPos;
 import xyz.nucleoid.map_templates.BlockBounds;
 
 public class PowderedSnowDeathTrap extends ResettingDeathTrap {
-    public static final Codec<PowderedSnowDeathTrap> CODEC = Codec.unit(PowderedSnowDeathTrap::new);
+    public static final MapCodec<PowderedSnowDeathTrap> CODEC = MapCodec.unit(PowderedSnowDeathTrap::new);
 
     @Override
     public void trigger(DRGame game, ServerWorld world, BlockBounds zone) {
@@ -21,7 +22,7 @@ public class PowderedSnowDeathTrap extends ResettingDeathTrap {
             var state = world.getBlockState(pos);
             if (state.isOf(Blocks.SNOW_BLOCK)) {
                 world.setBlockState(pos, Blocks.POWDER_SNOW.getDefaultState());
-                world.getPlayers().forEach(p -> p.networkHandler.sendPacket(new ParticleS2CPacket(ParticleTypes.CLOUD, false, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, 0, 0, 0, 0, 1)));
+                world.getPlayers().forEach(p -> p.networkHandler.sendPacket(new ParticleS2CPacket(ParticleTypes.CLOUD, false, false, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, 0, 0, 0, 0, 1)));
             }
         }
         var center = zone.center();
@@ -41,7 +42,7 @@ public class PowderedSnowDeathTrap extends ResettingDeathTrap {
     }
 
     @Override
-    public Codec<? extends DeathTrap> getCodec() {
+    public MapCodec<? extends DeathTrap> getCodec() {
         return CODEC;
     }
 }

@@ -1,6 +1,7 @@
 package io.github.foundationgames.deathrun.game.element.deathtrap;
 
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.foundationgames.deathrun.game.element.DeathTrap;
 import io.github.foundationgames.deathrun.game.state.DRGame;
@@ -15,7 +16,7 @@ import net.minecraft.util.math.Vec3d;
 import xyz.nucleoid.map_templates.BlockBounds;
 
 public class DispenserArrowDeathTrap extends DeathTrap {
-    public static final Codec<DispenserArrowDeathTrap> CODEC = RecordCodecBuilder.create(instance ->
+    public static final MapCodec<DispenserArrowDeathTrap> CODEC = RecordCodecBuilder.mapCodec(instance ->
             instance.group(
                     Codec.FLOAT.optionalFieldOf("variation", 6f).forGetter(trap -> trap.variation),
                     Codec.FLOAT.optionalFieldOf("force", 1.1f).forGetter(trap -> trap.force)
@@ -39,7 +40,7 @@ public class DispenserArrowDeathTrap extends DeathTrap {
             if (state.isOf(Blocks.DISPENSER)) {
                 var facing = state.get(Properties.FACING);
                 var arrPos = Vec3d.ofCenter(pos.offset(facing));
-                var arrow = new ArrowEntity(world, arrPos.x, arrPos.y, arrPos.z, Items.ARROW.getDefaultStack());
+                var arrow = new ArrowEntity(world, arrPos.x, arrPos.y, arrPos.z, Items.ARROW.getDefaultStack(), Items.BOW.getDefaultStack());
                 arrow.setVelocity(facing.getOffsetX(), facing.getOffsetY() + 0.1, facing.getOffsetZ(), force, variation);
                 world.syncWorldEvent(DISPENSER_EVENT_ID, pos.offset(facing), 0);
                 game.spawn(arrow, new ProjectileEntityBehavior.Arrow());
@@ -48,7 +49,7 @@ public class DispenserArrowDeathTrap extends DeathTrap {
     }
 
     @Override
-    public Codec<? extends DeathTrap> getCodec() {
+    public MapCodec<? extends DeathTrap> getCodec() {
         return CODEC;
     }
 }
