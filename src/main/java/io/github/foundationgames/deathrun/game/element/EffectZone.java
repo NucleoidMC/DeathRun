@@ -2,9 +2,9 @@ package io.github.foundationgames.deathrun.game.element;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import xyz.nucleoid.map_templates.BlockBounds;
 
 public record EffectZone(BlockBounds bounds, Effect effect) {
@@ -15,9 +15,9 @@ public record EffectZone(BlockBounds bounds, Effect effect) {
                 Codec.INT.fieldOf("amplifier").forGetter(Effect::amplifier)
         ).apply(instance, Effect::new));
 
-        public StatusEffectInstance createEffect() {
-            if (!Registries.STATUS_EFFECT.containsId(id)) return null;
-            return new StatusEffectInstance(Registries.STATUS_EFFECT.getEntry(id).get(), 2, amplifier, true, false, true);
+        public MobEffectInstance createEffect() {
+            if (!BuiltInRegistries.MOB_EFFECT.containsKey(id)) return null;
+            return new MobEffectInstance(BuiltInRegistries.MOB_EFFECT.get(id).get(), 2, amplifier, true, false, true);
         }
     }
 }

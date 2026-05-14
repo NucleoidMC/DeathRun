@@ -8,13 +8,13 @@ import io.github.foundationgames.deathrun.game.state.DRTeam;
 import io.github.foundationgames.deathrun.game.state.DRWaiting;
 import io.github.foundationgames.deathrun.util.DRUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.minecraft.item.Items;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
+import net.minecraft.world.item.Items;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.GameType;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.plasmid.api.game.GameActivity;
 import xyz.nucleoid.plasmid.api.game.player.JoinAcceptor;
@@ -26,14 +26,14 @@ import xyz.nucleoid.plasmid.api.util.ItemStackBuilder;
 import java.util.*;
 
 public class DRPlayerLogic implements PlayerSet {
-    private final ServerWorld world;
+    private final ServerLevel level;
     private final GameActivity game;
     private final DeathRunMap map;
     private final DeathRunConfig config;
-    private final Map<ServerPlayerEntity, DRPlayer> players = new HashMap<>();
+    private final Map<ServerPlayer, DRPlayer> players = new HashMap<>();
 
-    public DRPlayerLogic(ServerWorld world, GameActivity game, DeathRunMap map, DeathRunConfig config) {
-        this.world = world;
+    public DRPlayerLogic(ServerLevel level, GameActivity game, DeathRunMap map, DeathRunConfig config) {
+        this.level = level;
         this.game = game;
         this.map = map;
         this.config = config;
@@ -43,23 +43,23 @@ public class DRPlayerLogic implements PlayerSet {
         return players.values();
     }
 
-    public List<DRPlayer> getPlayers(Random random) {
+    public List<DRPlayer> getPlayers(RandomSource random) {
         var list = new ObjectArrayList<>(getPlayers());
         Util.shuffle(list, random);
         return list;
     }
 
-    public void resetWaiting(ServerPlayerEntity player) {
+    public void resetWaiting(ServerPlayer player) {
         var spawn = map.spawn;
         var min = spawn.min();
         var max = spawn.max();
-        var x = min.getX() + world.random.nextInt(max.getX() - min.getX()) + 0.5;
-        var z = min.getZ() + world.random.nextInt(max.getZ() - min.getZ()) + 0.5;
-        player.teleport(world, x, min.getY(), z, Set.of(), 0f, 0f, false);
-        player.changeGameMode(GameMode.ADVENTURE);
+        var x = min.getX() + level.getRandom().nextInt(max.getX() - min.getX()) + 0.5;
+        var z = min.getZ() + level.getRandom().nextInt(max.getZ() - min.getZ()) + 0.5;
+        player.teleportTo(level, x, min.getY(), z, Set.of(), 0f, 0f, false);
+        player.setGameMode(GameType.ADVENTURE);
     }
 
-    public void resetActive(ServerPlayerEntity player) {
+    public void resetActive(ServerPlayer player) {
         var pl = get(player);
 
         if (pl instanceof DRGame.Player gamePlayer) {
@@ -80,38 +80,38 @@ public class DRPlayerLogic implements PlayerSet {
             if (randomPos) {
                 var min = spawn.min();
                 var max = spawn.max();
-                x = min.getX() + world.random.nextInt(max.getX() - min.getX()) + 0.5;
-                z = min.getZ() + world.random.nextInt(max.getZ() - min.getZ()) + 0.5;
+                x = min.getX() + level.getRandom().nextInt(max.getX() - min.getX()) + 0.5;
+                z = min.getZ() + level.getRandom().nextInt(max.getZ() - min.getZ()) + 0.5;
             } else {
                 var center = spawn.center();
                 x = center.x;
                 z = center.z;
             }
-            player.teleport(world, x, spawn.min().getY(), z, Set.of(), spawnYaw, 0f, false);
-            pl.getPlayer().getInventory().clear();
+            player.teleportTo(level, x, spawn.min().getY(), z, Set.of(), spawnYaw, 0f, false);
+            pl.getPlayer().getInventory().clearContent();
             if (gamePlayer.team == DRTeam.RUNNERS && !gamePlayer.isFinished()) {
                 var boostItem = ItemStackBuilder.of(Items.FEATHER)
-                        .setName(Text.translatable("item.deathrun.boost_feather").styled(style -> style.withColor(0x9ce3ff).withItalic(false))).build();
+                        .setName(Component.translatable("item.deathrun.boost_feather").withStyle(style -> style.withColor(0x9ce3ff).withItalic(false))).build();
                 DRItemLogic.apply("boost", boostItem);
 
-                player.getInventory().setStack(0, boostItem);
+                player.getInventory().setItem(0, boostItem);
 
                 if (gamePlayer.game.config.runnersOnly()) {
                     var activatorItem = ItemStackBuilder.of(Items.TRIDENT)
-                            .setName(Text.translatable("item.deathrun.activator_trident").styled(style -> style.withColor(0xffe747).withItalic(false))).build();
+                            .setName(Component.translatable("item.deathrun.activator_trident").withStyle(style -> style.withColor(0xffe747).withItalic(false))).build();
                     DRItemLogic.apply("activator", activatorItem);
-                    player.getInventory().setStack(1, activatorItem);
+                    player.getInventory().setItem(1, activatorItem);
                 }
             }
         }
-        player.changeGameMode(GameMode.ADVENTURE);
+        player.setGameMode(GameType.ADVENTURE);
     }
 
-    public void resetSpectator(ServerPlayerEntity player) {
-        player.changeGameMode(GameMode.SPECTATOR);
+    public void resetSpectator(ServerPlayer player) {
+        player.setGameMode(GameType.SPECTATOR);
     }
 
-    public static void sortTeams(Random random, DRPlayerLogic waiting, DRGame game) {
+    public static void sortTeams(RandomSource random, DRPlayerLogic waiting, DRGame game) {
         var gamePlayers = game.players;
         var waitingPlayers = waiting.getPlayers(random);
         // Runners only team sorting (put everyone on runners team)
@@ -157,12 +157,12 @@ public class DRPlayerLogic implements PlayerSet {
         this.getPlayers().forEach(DRPlayer::tick);
     }
 
-    public void onLeave(ServerPlayerEntity player) {
+    public void onLeave(ServerPlayer player) {
         this.players.remove(player);
     }
 
     public JoinAcceptorResult acceptWaiting(JoinAcceptor offer) {
-        return offer.teleport(world, map.spawn.centerBottom())
+        return offer.teleport(level, map.spawn.centerBottom())
                 .thenRunForEach((player, intent) -> {
                     if (intent == JoinIntent.PLAY) {
                         this.add(new DRWaiting.Player(player, this));
@@ -173,7 +173,7 @@ public class DRPlayerLogic implements PlayerSet {
 
 
     public JoinAcceptorResult acceptSpectator(JoinAcceptor offer) {
-        return offer.teleport(world, map.spawn.centerBottom())
+        return offer.teleport(level, map.spawn.centerBottom())
                 .thenRunForEach((player, intent) -> {
                     this.resetSpectator(player);
                 });
@@ -187,20 +187,20 @@ public class DRPlayerLogic implements PlayerSet {
         this.players.put(player.getPlayer(), player);
     }
 
-    public DRPlayer get(ServerPlayerEntity player) {
+    public DRPlayer get(ServerPlayer player) {
         return this.players.get(player);
     }
 
     @Override
     public boolean contains(UUID id) {
-        var player = world.getPlayerByUuid(id);
-        return player instanceof ServerPlayerEntity && players.containsKey(player);
+        var player = level.getPlayerByUUID(id);
+        return player instanceof ServerPlayer && players.containsKey(player);
     }
 
     @Override
-    public @Nullable ServerPlayerEntity getEntity(UUID id) {
-        var player = world.getPlayerByUuid(id);
-        return player instanceof ServerPlayerEntity sPlayer ? sPlayer : null;
+    public @Nullable ServerPlayer getEntity(UUID id) {
+        var player = level.getPlayerByUUID(id);
+        return player instanceof ServerPlayer sPlayer ? sPlayer : null;
     }
 
     @Override
@@ -209,7 +209,7 @@ public class DRPlayerLogic implements PlayerSet {
     }
 
     @Override
-    public Iterator<ServerPlayerEntity> iterator() {
+    public Iterator<ServerPlayer> iterator() {
         return players.keySet().iterator();
     }
 }

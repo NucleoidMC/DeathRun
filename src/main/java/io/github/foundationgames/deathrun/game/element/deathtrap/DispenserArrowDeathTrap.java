@@ -6,13 +6,13 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.foundationgames.deathrun.game.element.DeathTrap;
 import io.github.foundationgames.deathrun.game.state.DRGame;
 import io.github.foundationgames.deathrun.game.state.logic.entity.ProjectileEntityBehavior;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.projectile.ArrowEntity;
-import net.minecraft.item.Items;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.state.property.Properties;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.entity.projectile.arrow.Arrow;
+import net.minecraft.world.item.Items;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
 import xyz.nucleoid.map_templates.BlockBounds;
 
 public class DispenserArrowDeathTrap extends DeathTrap {
@@ -34,15 +34,15 @@ public class DispenserArrowDeathTrap extends DeathTrap {
     }
 
     @Override
-    public void trigger(DRGame game, ServerWorld world, BlockBounds zone) {
+    public void trigger(DRGame game, ServerLevel level, BlockBounds zone) {
         for (BlockPos pos : zone) {
-            var state = world.getBlockState(pos);
-            if (state.isOf(Blocks.DISPENSER)) {
-                var facing = state.get(Properties.FACING);
-                var arrPos = Vec3d.ofCenter(pos.offset(facing));
-                var arrow = new ArrowEntity(world, arrPos.x, arrPos.y, arrPos.z, Items.ARROW.getDefaultStack(), Items.BOW.getDefaultStack());
-                arrow.setVelocity(facing.getOffsetX(), facing.getOffsetY() + 0.1, facing.getOffsetZ(), force, variation);
-                world.syncWorldEvent(DISPENSER_EVENT_ID, pos.offset(facing), 0);
+            var state = level.getBlockState(pos);
+            if (state.is(Blocks.DISPENSER)) {
+                var facing = state.getValue(BlockStateProperties.FACING);
+                var arrPos = Vec3.atCenterOf(pos.relative(facing));
+                var arrow = new Arrow(level, arrPos.x, arrPos.y, arrPos.z, Items.ARROW.getDefaultInstance(), Items.BOW.getDefaultInstance());
+                arrow.shoot(facing.getStepX(), facing.getStepY() + 0.1, facing.getStepZ(), force, variation);
+                level.levelEvent(DISPENSER_EVENT_ID, pos.relative(facing), 0);
                 game.spawn(arrow, new ProjectileEntityBehavior.Arrow());
             }
         }

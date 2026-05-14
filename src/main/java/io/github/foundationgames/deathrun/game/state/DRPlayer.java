@@ -1,18 +1,18 @@
 package io.github.foundationgames.deathrun.game.state;
 
 import io.github.foundationgames.deathrun.game.state.logic.DRPlayerLogic;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 public abstract class DRPlayer {
-    protected final ServerPlayerEntity player;
+    protected final ServerPlayer player;
     protected final DRPlayerLogic logic;
 
-    protected DRPlayer(ServerPlayerEntity player, DRPlayerLogic logic) {
+    protected DRPlayer(ServerPlayer player, DRPlayerLogic logic) {
         this.player = player;
         this.logic = logic;
     }
 
-    public ServerPlayerEntity getPlayer() {
+    public ServerPlayer getPlayer() {
         return player;
     }
 

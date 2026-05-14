@@ -4,7 +4,7 @@
   "compatibilityLevel": "JAVA_17",
   "mixins": [
     "FallingBlockEntityAccess",
-    "PersistentProjectileEntityAccess"
+    "AbstractArrowAccess"
   ],
   "injectors": {
     "defaultRequire": 1

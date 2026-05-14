@@ -7,35 +7,35 @@ import com.mojang.serialization.DataResult;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.registry.DynamicRegistryManager;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.RegistryOps;
-import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.text.PlainTextContent;
-import net.minecraft.text.Text;
-import net.minecraft.text.TextCodecs;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.RegistryOps;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.network.chat.contents.PlainTextContents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
 
-public record MapText(Vec3d pos, TextData text) {
-    private static final RegistryWrapper.WrapperLookup LOOKUP = DynamicRegistryManager.of(Registries.REGISTRIES);
+public record MapText(Vec3 pos, TextData text) {
+    private static final HolderLookup.Provider LOOKUP = RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY);
 
-    public record TextData(List<Text> lines) {
-        public static final Codec<Text> JSON_TEXT_CODEC = new Codec<Text>() {
+    public record TextData(List<Component> lines) {
+        public static final Codec<Component> JSON_TEXT_CODEC = new Codec<Component>() {
             @Override
-            public <T> DataResult<Pair<Text, T>> decode(DynamicOps<T> ops, T input) {
-                var decoded = TextCodecs.CODEC.decode(ops, input);
+            public <T> DataResult<Pair<Component, T>> decode(DynamicOps<T> ops, T input) {
+                var decoded = ComponentSerialization.CODEC.decode(ops, input);
 
                 if (decoded.isSuccess()) {
                     var val = decoded.getOrThrow().getFirst();
-                    if (val.getSiblings().isEmpty() && val.getStyle().isEmpty() && val.getContent() instanceof PlainTextContent.Literal literal) {
-                        if (literal.string().length() > 2 && literal.string().charAt(0) == '"' && literal.string().charAt(literal.string().length() - 1) == '"') {
-                            return DataResult.success(new Pair<>(Text.literal(literal.string().substring(1, literal.string().length() - 2)), decoded.getOrThrow().getSecond()));
-                        } else if (literal.string().length() > 2 && literal.string().charAt(0) == '{' && literal.string().charAt(literal.string().length() - 1) == '}') {
+                    if (val.getSiblings().isEmpty() && val.getStyle().isEmpty() && val.getContents() instanceof PlainTextContents.LiteralContents literal) {
+                        if (literal.text().length() > 2 && literal.text().charAt(0) == '"' && literal.text().charAt(literal.text().length() - 1) == '"') {
+                            return DataResult.success(new Pair<>(Component.literal(literal.text().substring(1, literal.text().length() - 2)), decoded.getOrThrow().getSecond()));
+                        } else if (literal.text().length() > 2 && literal.text().charAt(0) == '{' && literal.text().charAt(literal.text().length() - 1) == '}') {
                             try {
-                                var json = JsonParser.parseString(literal.string());
-                                return DataResult.success(new Pair<>(TextCodecs.CODEC.decode(ops instanceof RegistryOps<T> registryOps ? registryOps.withDelegate(JsonOps.INSTANCE) : JsonOps.INSTANCE, json).getOrThrow().getFirst(), decoded.getOrThrow().getSecond()));
+                                var json = JsonParser.parseString(literal.text());
+                                return DataResult.success(new Pair<>(ComponentSerialization.CODEC.decode(ops instanceof RegistryOps<T> registryOps ? registryOps.withParent(JsonOps.INSTANCE) : JsonOps.INSTANCE, json).getOrThrow().getFirst(), decoded.getOrThrow().getSecond()));
                             } catch (Throwable throwable) {
                                 // ignored
                             }
@@ -48,8 +48,8 @@ public record MapText(Vec3d pos, TextData text) {
             }
 
             @Override
-            public <T> DataResult<T> encode(Text input, DynamicOps<T> ops, T prefix) {
-                return TextCodecs.CODEC.encode(input.copy().setStyle(input.getStyle().withInsertion("")), ops, prefix);
+            public <T> DataResult<T> encode(Component input, DynamicOps<T> ops, T prefix) {
+                return ComponentSerialization.CODEC.encode(input.copy().setStyle(input.getStyle().withInsertion("")), ops, prefix);
             }
         };
 
