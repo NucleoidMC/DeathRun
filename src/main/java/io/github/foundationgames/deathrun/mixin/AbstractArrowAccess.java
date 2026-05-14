@@ -1,12 +1,12 @@
 package io.github.foundationgames.deathrun.mixin;
 
-import net.minecraft.entity.projectile.PersistentProjectileEntity;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
-@Mixin(PersistentProjectileEntity.class)
-public interface PersistentProjectileEntityAccess {
+@Mixin(AbstractArrow.class)
+public interface AbstractArrowAccess {
     @Invoker("isInGround")
     boolean deathrun$inGround();
 }

@@ -1,10 +1,10 @@
 package io.github.foundationgames.deathrun.game.state.logic;
 
 import io.github.foundationgames.deathrun.DeathRun;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionHand;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,16 +20,16 @@ public class DRItemLogic {
         stack.set(DeathRun.BEHAVIOR, behavior);
     }
 
-    public ActionResult processUse(ServerPlayerEntity player, Hand hand) {
-        var stack = player.getStackInHand(hand);
+    public InteractionResult processUse(ServerPlayer player, InteractionHand hand) {
+        var stack = player.getItemInHand(hand);
         var behavior = entries.get(stack.getOrDefault(DeathRun.BEHAVIOR, ""));
         if (behavior != null) {
             return behavior.use(player, stack, hand);
         }
-        return ActionResult.PASS;
+        return InteractionResult.PASS;
     }
 
     public interface Behavior {
-        ActionResult use(ServerPlayerEntity player, ItemStack stack, Hand hand);
+        InteractionResult use(ServerPlayer player, ItemStack stack, InteractionHand hand);
     }
 }

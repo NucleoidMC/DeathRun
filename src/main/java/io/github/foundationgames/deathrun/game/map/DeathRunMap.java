@@ -8,23 +8,23 @@ import io.github.foundationgames.deathrun.game.element.CheckpointZone;
 import io.github.foundationgames.deathrun.game.element.DeathTrapZone;
 import io.github.foundationgames.deathrun.game.element.EffectZone;
 import io.github.foundationgames.deathrun.game.element.MapText;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.decoration.DisplayEntity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.Display;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.text.Texts;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.gen.chunk.ChunkGenerator;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentUtils;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import xyz.nucleoid.map_templates.BlockBounds;
 import xyz.nucleoid.map_templates.MapTemplate;
 import xyz.nucleoid.map_templates.MapTemplateSerializer;
 import xyz.nucleoid.map_templates.TemplateRegion;
 import xyz.nucleoid.plasmid.api.game.GameOpenException;
-import xyz.nucleoid.plasmid.api.game.world.generator.TemplateChunkGenerator;
+import xyz.nucleoid.plasmid.api.game.level.generator.TemplateChunkGenerator;
 
 import java.io.IOException;
 import java.util.List;
@@ -63,7 +63,7 @@ public class DeathRunMap {
         try {
             template = MapTemplateSerializer.loadFromResource(server, cfg.mapId());
         } catch (IOException e) {
-            throw new GameOpenException(Text.literal(String.format("Map %s was not found", cfg.mapId())));
+            throw new GameOpenException(Component.literal(String.format("Map %s was not found", cfg.mapId())));
         }
 
         var deathTraps = ImmutableMap.<BlockPos, DeathTrapZone>builder();
@@ -75,7 +75,7 @@ public class DeathRunMap {
                 deathTraps.put(deathTrapZone.getButton(), deathTrapZone);
             });
             result.error().ifPresent(ex -> {
-                throw new GameOpenException(Text.literal("Failed to decode death trap zone: " + ex));
+                throw new GameOpenException(Component.literal("Failed to decode death trap zone: " + ex));
             });
         }
 
@@ -85,7 +85,7 @@ public class DeathRunMap {
 
             result.result().ifPresent(effect -> effectZones.add(new EffectZone(reg.getBounds(), effect)));
             result.error().ifPresent(ex -> {
-                throw new GameOpenException(Text.literal("Failed to decode effect zone data: " + ex));
+                throw new GameOpenException(Component.literal("Failed to decode effect zone data: " + ex));
             });
         }
 
@@ -95,7 +95,7 @@ public class DeathRunMap {
 
             result.result().ifPresent(textData -> mapTexts.add(new MapText(reg.getBounds().center(), textData)));
             result.error().ifPresent(ex -> {
-                throw new GameOpenException(Text.literal("Failed to decode 'text' region data: " + ex));
+                throw new GameOpenException(Component.literal("Failed to decode 'text' region data: " + ex));
             });
         }
 
@@ -103,7 +103,7 @@ public class DeathRunMap {
         template.getMetadata().getRegions("checkpoint").forEach(reg -> {
             var bounds = reg.getBounds();
             float yaw = 0;
-            if (reg.getData().contains("yaw")) yaw = reg.getData().getFloat("yaw", 0);
+            if (reg.getData().contains("yaw")) yaw = reg.getData().getFloatOr("yaw", 0);
             checkpoints.add(new CheckpointZone(bounds, yaw));
         });
 
@@ -113,17 +113,17 @@ public class DeathRunMap {
         var gate = template.getMetadata().getFirstRegionBounds("gate");
         var finish = template.getMetadata().getFirstRegionBounds("finish");
 
-        if (spawn == null) throw new GameOpenException(Text.literal("Missing spawn region!"));
-        if (runnerStart == null) throw new GameOpenException(Text.literal("Missing runner_start region!"));
-        if (deathStart == null) throw new GameOpenException(Text.literal("Missing death_start region!"));
-        if (gate == null) throw new GameOpenException(Text.literal("Missing gate region!"));
-        if (finish == null) throw new GameOpenException(Text.literal("Missing finish region!"));
+        if (spawn == null) throw new GameOpenException(Component.literal("Missing spawn region!"));
+        if (runnerStart == null) throw new GameOpenException(Component.literal("Missing runner_start region!"));
+        if (deathStart == null) throw new GameOpenException(Component.literal("Missing death_start region!"));
+        if (gate == null) throw new GameOpenException(Component.literal("Missing gate region!"));
+        if (finish == null) throw new GameOpenException(Component.literal("Missing finish region!"));
 
         Map<BlockPos, DeathTrapZone> builtDeathTraps;
         try {
             builtDeathTraps = deathTraps.build();
         } catch (IllegalArgumentException ex) {
-            throw new GameOpenException(Text.literal("Two death zones may not share the same button"));
+            throw new GameOpenException(Component.literal("Two death zones may not share the same button"));
         }
 
         return new DeathRunMap(template, builtDeathTraps, checkpoints.build(), effectZones.build(), mapTexts.build(), spawn, runnerStart, deathStart, gate, finish, cfg.time());
@@ -133,15 +133,15 @@ public class DeathRunMap {
         return new TemplateChunkGenerator(server, template);
     }
 
-    public void applyFeatures(ServerWorld world) {
+    public void applyFeatures(ServerLevel level) {
         for (var mapText : mapTexts) {
             var lines = mapText.text().lines();
-            Vec3d pos = mapText.pos().add(0, (lines.size() * 0.35) * 0.5, 0);
-            var display = EntityType.TEXT_DISPLAY.create(world, SpawnReason.LOAD);
-            display.setPosition(pos);
-            display.setText(Texts.join(lines, Text.literal("\n")));
-            display.setBillboardMode(DisplayEntity.BillboardMode.CENTER);
-            world.spawnEntity(display);
+            Vec3 pos = mapText.pos().add(0, (lines.size() * 0.35) * 0.5, 0);
+            var display = EntityType.TEXT_DISPLAY.create(level, EntitySpawnReason.LOAD);
+            display.setPos(pos);
+            display.setText(ComponentUtils.formatList(lines, Component.literal("\n")));
+            display.setBillboardConstraints(Display.BillboardConstraints.CENTER);
+            level.addFreshEntity(display);
         }
     }
 }

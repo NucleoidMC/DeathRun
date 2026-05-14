@@ -1,16 +1,16 @@
 package io.github.foundationgames.deathrun.game.state.logic.entity;
 
 import io.github.foundationgames.deathrun.game.state.DRGame;
-import io.github.foundationgames.deathrun.mixin.PersistentProjectileEntityAccess;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.projectile.ArrowEntity;
-import net.minecraft.entity.projectile.PersistentProjectileEntity;
-import net.minecraft.entity.projectile.ProjectileEntity;
+import io.github.foundationgames.deathrun.mixin.AbstractArrowAccess;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.projectile.arrow.Arrow;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
+import net.minecraft.world.entity.projectile.Projectile;
 
-public abstract class ProjectileEntityBehavior<P extends ProjectileEntity> extends EntityBehavior<P> {
+public abstract class ProjectileEntityBehavior<P extends Projectile> extends EntityBehavior<P> {
     @Override
     public void tick(P entity, DRGame game) {
-        if (entity instanceof PersistentProjectileEntity proj && ((PersistentProjectileEntityAccess)proj).deathrun$inGround()) {
+        if (entity instanceof AbstractArrow proj && ((AbstractArrowAccess)proj).deathrun$inGround()) {
             onHitBlock(entity, game);
         }
     }
@@ -19,10 +19,10 @@ public abstract class ProjectileEntityBehavior<P extends ProjectileEntity> exten
         entity.remove(Entity.RemovalReason.DISCARDED);
     }
 
-    public static class Arrow extends ProjectileEntityBehavior<ArrowEntity> {
+    public static class Arrow extends ProjectileEntityBehavior<net.minecraft.world.entity.projectile.arrow.Arrow> {
         @Override
-        public Class<ArrowEntity> getEntityClass() {
-            return ArrowEntity.class;
+        public Class<net.minecraft.world.entity.projectile.arrow.Arrow> getEntityClass() {
+            return net.minecraft.world.entity.projectile.arrow.Arrow.class;
         }
     }
 }

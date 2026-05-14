@@ -6,14 +6,14 @@ import io.github.foundationgames.deathrun.game.map.DeathRunMap;
 import io.github.foundationgames.deathrun.game.state.logic.DRItemLogic;
 import io.github.foundationgames.deathrun.game.state.logic.DRPlayerLogic;
 import io.github.foundationgames.deathrun.util.DRUtil;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Hand;
-import net.minecraft.world.GameRules;
-import xyz.nucleoid.fantasy.RuntimeWorldConfig;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.ChatFormatting;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.level.gamerules.GameRules;
+import xyz.nucleoid.fantasy.RuntimeLevelConfig;
 import xyz.nucleoid.plasmid.api.game.GameActivity;
 import xyz.nucleoid.plasmid.api.game.GameOpenContext;
 import xyz.nucleoid.plasmid.api.game.GameOpenProcedure;
@@ -29,19 +29,19 @@ import xyz.nucleoid.stimuli.event.item.ItemUseEvent;
 import xyz.nucleoid.stimuli.event.player.PlayerDeathEvent;
 
 public class DRWaiting {
-    public final ServerWorld world;
+    public final ServerLevel level;
     public final GameActivity game;
     public final DeathRunMap map;
     public final DeathRunConfig config;
     public final DRPlayerLogic players;
     private final DRItemLogic items = new DRItemLogic();
 
-    public DRWaiting(ServerWorld world, GameActivity game, DeathRunMap map, DeathRunConfig config) {
-        this.world = world;
+    public DRWaiting(ServerLevel level, GameActivity game, DeathRunMap map, DeathRunConfig config) {
+        this.level = level;
         this.game = game;
         this.map = map;
         this.config = config;
-        this.players = new DRPlayerLogic(this.world, game, map, config);
+        this.players = new DRPlayerLogic(this.level, game, map, config);
 
         game.listen(ItemUseEvent.EVENT, items::processUse);
     }
@@ -51,16 +51,17 @@ public class DRWaiting {
         var cfg = ctx.config();
         var mapCfg = cfg.map();
         var map = DeathRunMap.create(server, mapCfg);
-        var worldCfg = new RuntimeWorldConfig().setTimeOfDay(mapCfg.time()).setGenerator(map.createGenerator(server));
+        //.setTimeOfDay(mapCfg.time())
+        var levelCfg = new RuntimeLevelConfig().setGenerator(map.createGenerator(server));
 
-        worldCfg.setGameRule(GameRules.DO_FIRE_TICK, false);
+        levelCfg.setGameRule(GameRules.FIRE_SPREAD_RADIUS_AROUND_PLAYER, 0);
 
-        return ctx.openWithWorld(worldCfg, (game, world) -> {
-            var waiting = new DRWaiting(world, game, map, cfg);
+        return ctx.openWithLevel(levelCfg, (game, level) -> {
+            var waiting = new DRWaiting(level, game, map, cfg);
 
             GameWaitingLobby.addTo(game, cfg.players());
 
-            map.applyFeatures(world);
+            map.applyFeatures(level);
 
             DRUtil.setBaseGameRules(game);
 
@@ -69,27 +70,27 @@ public class DRWaiting {
                     return;
                 }
                 layout.addLeading(() -> GuiElementBuilder.from(DRUtil.createRunnerHead())
-                        .setName(Text.translatable("item.deathrun.request_runner").styled(style -> style.withColor(0x6bffc1).withItalic(false)))
+                        .setName(Component.translatable("item.deathrun.request_runner").withStyle(style -> style.withColor(0x6bffc1).withItalic(false)))
                         .setCallback(() -> {
-                            player.sendMessage(Text.translatable("message.deathrun.requested_runner").formatted(Formatting.GOLD), false);
+                            player.sendSystemMessage(Component.translatable("message.deathrun.requested_runner").withStyle(ChatFormatting.GOLD), false);
                             if (waiting.players.get(player) instanceof DRWaiting.Player wp) wp.requestedTeam = DRTeam.RUNNERS;
-                            player.swingHand(Hand.MAIN_HAND, true);
+                            player.swing(InteractionHand.MAIN_HAND, true);
                         })
                         .build());
                 layout.addLeading(() -> GuiElementBuilder.from(DRUtil.createDeathHead())
-                        .setName(Text.translatable("item.deathrun.request_death").styled(style -> style.withColor(0x6bffc1).withItalic(false)))
+                        .setName(Component.translatable("item.deathrun.request_death").withStyle(style -> style.withColor(0x6bffc1).withItalic(false)))
                         .setCallback(() -> {
-                            player.sendMessage(Text.translatable("message.deathrun.requested_death").formatted(Formatting.GOLD), false);
+                            player.sendSystemMessage(Component.translatable("message.deathrun.requested_death").withStyle(ChatFormatting.GOLD), false);
                             if (waiting.players.get(player) instanceof DRWaiting.Player wp) wp.requestedTeam = DRTeam.DEATHS;
-                            player.swingHand(Hand.MAIN_HAND, true);
+                            player.swing(InteractionHand.MAIN_HAND, true);
                         })
                         .build());
                 layout.addLeading(() -> GuiElementBuilder.from(DRUtil.createClearHead())
-                        .setName(Text.translatable("item.deathrun.request_clear").styled(style -> style.withColor(0xff6e42).withItalic(false)))
+                        .setName(Component.translatable("item.deathrun.request_clear").withStyle(style -> style.withColor(0xff6e42).withItalic(false)))
                         .setCallback(() -> {
-                            player.sendMessage(Text.translatable("message.deathrun.cleared_requests").formatted(Formatting.GREEN), false);
+                            player.sendSystemMessage(Component.translatable("message.deathrun.cleared_requests").withStyle(ChatFormatting.GREEN), false);
                             if (waiting.players.get(player) instanceof DRWaiting.Player wp) wp.requestedTeam = null;
-                            player.swingHand(Hand.MAIN_HAND, true);
+                            player.swing(InteractionHand.MAIN_HAND, true);
                         })
                         .build());
             });
@@ -115,7 +116,7 @@ public class DRWaiting {
     public static class Player extends DRPlayer {
         public DRTeam requestedTeam = null;
 
-        public Player(ServerPlayerEntity player, DRPlayerLogic logic) {
+        public Player(ServerPlayer player, DRPlayerLogic logic) {
             super(player, logic);
         }
     }

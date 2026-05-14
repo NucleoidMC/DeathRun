@@ -5,16 +5,16 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.foundationgames.deathrun.game.element.DeathTrap;
 import io.github.foundationgames.deathrun.game.state.DRGame;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.core.BlockPos;
 import xyz.nucleoid.map_templates.BlockBounds;
 
 public class InvisiblePathDeathTrap extends ResettingDeathTrap {
     public static final MapCodec<InvisiblePathDeathTrap> CODEC = RecordCodecBuilder.mapCodec(instance ->
             instance.group(
-                    BlockState.CODEC.optionalFieldOf("block", Blocks.AMETHYST_BLOCK.getDefaultState()).forGetter(trap -> trap.state),
+                    BlockState.CODEC.optionalFieldOf("block", Blocks.AMETHYST_BLOCK.defaultBlockState()).forGetter(trap -> trap.state),
                     Codec.INT.optionalFieldOf("down", 2).forGetter(trap -> trap.down)
             ).apply(instance, InvisiblePathDeathTrap::new)
     );
@@ -28,21 +28,21 @@ public class InvisiblePathDeathTrap extends ResettingDeathTrap {
     }
 
     @Override
-    public void trigger(DRGame game, ServerWorld world, BlockBounds zone) {
+    public void trigger(DRGame game, ServerLevel level, BlockBounds zone) {
         for (BlockPos pos : zone) {
-            var state = world.getBlockState(pos);
-            if (state.isOf(Blocks.BARRIER)) {
-                world.setBlockState(pos.down(down), Blocks.WATER.getDefaultState());
+            var state = level.getBlockState(pos);
+            if (state.is(Blocks.BARRIER)) {
+                level.setBlockAndUpdate(pos.below(down), Blocks.WATER.defaultBlockState());
             }
         }
     }
 
     @Override
-    public void reset(DRGame game, ServerWorld world, BlockBounds zone) {
+    public void reset(DRGame game, ServerLevel level, BlockBounds zone) {
         for (BlockPos pos : zone) {
-            var state = world.getBlockState(pos);
-            if (state.isOf(Blocks.BARRIER)) {
-                world.setBlockState(pos.down(down), this.state);
+            var state = level.getBlockState(pos);
+            if (state.is(Blocks.BARRIER)) {
+                level.setBlockAndUpdate(pos.below(down), this.state);
             }
         }
     }

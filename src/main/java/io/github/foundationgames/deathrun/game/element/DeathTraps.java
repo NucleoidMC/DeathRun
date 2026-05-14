@@ -4,7 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import io.github.foundationgames.deathrun.DeathRun;
 import io.github.foundationgames.deathrun.game.element.deathtrap.*;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 import xyz.nucleoid.plasmid.api.util.TinyRegistry;
 
 import java.util.function.Function;

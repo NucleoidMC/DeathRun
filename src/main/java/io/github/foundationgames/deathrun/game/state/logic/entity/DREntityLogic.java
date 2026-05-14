@@ -2,8 +2,8 @@ package io.github.foundationgames.deathrun.game.state.logic.entity;
 
 import io.github.foundationgames.deathrun.DeathRun;
 import io.github.foundationgames.deathrun.game.state.DRGame;
-import net.minecraft.entity.Entity;
-import net.minecraft.server.world.ServerWorld;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.server.level.ServerLevel;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,11 +13,11 @@ import java.util.Set;
 public class DREntityLogic {
     private final Map<Integer, EntityBehavior<Entity>> active = new HashMap<>();
     private final Set<Integer> idCache = new HashSet<>();
-    private final ServerWorld world;
+    private final ServerLevel level;
     private final DRGame game;
 
-    public DREntityLogic(ServerWorld world, DRGame game) {
-        this.world = world;
+    public DREntityLogic(ServerLevel level, DRGame game) {
+        this.level = level;
         this.game = game;
     }
 
@@ -30,7 +30,7 @@ public class DREntityLogic {
         idCache.clear();
         idCache.addAll(active.keySet());
         for (int id : idCache) {
-            var entity = world.getEntityById(id);
+            var entity = level.getEntity(id);
             if (entity == null || entity.isRemoved()) {
                 active.remove(id);
                 continue;
